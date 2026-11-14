@@ -18,7 +18,9 @@
 | Lista de issues iniciales | `scripts/crear_etiquetas_e_issues.sh`, pendiente de ejecutar. |
 | Código de aplicación | **No existe todavía.** |
 
-Todo lo anterior está en la rama `docs/auditoria-v1.1-y-colaboracion`, ya subida a GitHub y **pendiente de PR y fusión**. Los seis diagramas Mermaid se comprobaron renderizados en GitHub.
+Todo lo anterior está fusionado en `main` desde el 14 de noviembre de 2026. Los seis diagramas Mermaid se comprobaron renderizados en GitHub.
+
+Esa fusión se hizo directo a `main`, por decisión del equipo, para cerrar la fase de consolidación. **A partir de aquí aplica el acuerdo:** todo cambio entra por rama y PR.
 
 ---
 
@@ -70,7 +72,8 @@ Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
 
 ### Paso 0 — Consolidar
 
-- [ ] Abrir el PR de `docs/auditoria-v1.1-y-colaboracion` hacia `main`, revisarlo entre las dos personas y fusionarlo.
+- [x] Documentación v1.1, acuerdo de colaboración, skills, subagentes y gráficas fusionados en `main`.
+- [ ] Las dos personas leen `docs/05`, `docs/06` y `AGENTS.md`, y anotan desacuerdos como issues.
 - [ ] Proteger `main`: PR obligatorio y una aprobación.
 - [ ] Crear etiquetas e issues: `gh auth login` y luego `bash scripts/crear_etiquetas_e_issues.sh --crear`. Sin `--crear` solo muestra lo que haría.
 
