@@ -1,0 +1,13 @@
+tipo,nivel,sostenimiento,alumnos,docentes,escuelas
+Básica,Inicial,Público,99971,5883,3182
+Básica,Inicial,Privado,129872,4878,1834
+Básica,Preescolar,Público,3428459,190676,74658
+Básica,Preescolar,Privado,568308,40089,12997
+Básica,Primaria,Público,11499555,507534,87119
+Básica,Primaria,Privado,1338646,66750,9148
+Básica,Secundaria,Público,5652138,353341,37229
+Básica,Secundaria,Privado,641392,68631,5746
+Media superior,Media superior,Público,4671284,325208,14745
+Media superior,Media superior,Privado,821207,98379,6430
+Superior,Superior,Público,3417960,285835,3301
+Superior,Superior,Privado,2101831,233355,5962

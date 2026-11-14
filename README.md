@@ -94,6 +94,7 @@ Nueva LFPDPPP (DOF 20 mar 2025). Las alergias son datos sensibles y requieren co
 5. **[Auditoría y Decisiones](./docs/05_auditoria_y_decisiones.md):** hallazgos de la revisión de la v1.0, razones de cada cambio y decisiones abiertas.
 6. **[Trabajo Colaborativo](./docs/06_trabajo_colaborativo.md):** carriles, ramas y papel de cada herramienta. Reglas para agentes en [AGENTS.md](./AGENTS.md).
 7. **[Estado y Siguientes Pasos](./docs/07_estado_y_siguientes_pasos.md):** punto de retoma y lista de tareas en orden.
+8. **[Análisis y Gráficas](./analisis/README.md):** datos de la SEP y ENSANUT con gráficas en R sobre el sistema educativo y la regulación de alimentos.
 
 ---
 
