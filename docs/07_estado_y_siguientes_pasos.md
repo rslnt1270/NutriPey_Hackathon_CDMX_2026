@@ -14,9 +14,11 @@
 | Acuerdo de trabajo colaborativo | [06_trabajo_colaborativo.md](./06_trabajo_colaborativo.md) y [AGENTS.md](../AGENTS.md) |
 | Skills y subagentes | `.claude/skills/` y `.claude/agents/` |
 | Contrato del ledger | Borrador en [contracts/ledger.md](./contracts/ledger.md) |
+| Gráficas del contexto educativo y regulatorio | [analisis/](../analisis/README.md): datos de la SEP y ENSANUT, siete gráficas en R. |
+| Lista de issues iniciales | `scripts/crear_etiquetas_e_issues.sh`, pendiente de ejecutar. |
 | Código de aplicación | **No existe todavía.** |
 
-**No verificado:** el render de los diagramas Mermaid de la v1.1. Revisarlos en GitHub al abrir el PR; si alguno falla, corregirlo antes de fusionar.
+Todo lo anterior está en la rama `docs/auditoria-v1.1-y-colaboracion`, ya subida a GitHub y **pendiente de PR y fusión**. Los seis diagramas Mermaid se comprobaron renderizados en GitHub.
 
 ---
 
@@ -68,9 +70,9 @@ Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
 
 ### Paso 0 — Consolidar
 
-- [ ] Revisar y fusionar el PR de la documentación v1.1 y el acuerdo de colaboración.
+- [ ] Abrir el PR de `docs/auditoria-v1.1-y-colaboracion` hacia `main`, revisarlo entre las dos personas y fusionarlo.
 - [ ] Proteger `main`: PR obligatorio y una aprobación.
-- [ ] Crear las etiquetas `carril:pagos`, `carril:campus`, `compartido`, `bloqueado`.
+- [ ] Crear etiquetas e issues: `gh auth login` y luego `bash scripts/crear_etiquetas_e_issues.sh --crear`. Sin `--crear` solo muestra lo que haría.
 
 ### Paso 1 — Decidir (las dos personas)
 
