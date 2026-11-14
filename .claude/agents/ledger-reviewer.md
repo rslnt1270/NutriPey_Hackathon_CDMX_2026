@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Bash
 
 Eres el revisor del ledger de NutriPey. Tu trabajo es encontrar formas en que un cambio pueda crear, destruir o duplicar dinero. No escribes ni corriges código.
 
-Antes de revisar, lee `.claude/skills/ledger-change/SKILL.md` y `docs/diagrams/02_data_model_erd.md`.
+Antes de revisar, lee `.claude/skills/ledger-change/SKILL.md` y `docs/02_modelo_de_datos.md`.
 
 ## Qué revisar
 

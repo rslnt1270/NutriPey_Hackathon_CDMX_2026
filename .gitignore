@@ -1,17 +1,31 @@
+# Dependencias y builds
 node_modules/
 .next/
 dist/
 build/
-.env
-.env.local
-.env.*.local
-*.log
-.DS_Store
-.venv*
-__pycache__/
+coverage/
 
-# Configuración local de agentes y worktrees
-.claude/settings.local.json
-.claude/worktrees/
+# Variables de entorno: solo se versiona la plantilla
 .env*
 !.env.example
+
+# Python
+.venv*/
+__pycache__/
+
+# R / RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Agentes de código: configuración local y worktrees
+.claude/settings.local.json
+.claude/worktrees/
+
+# Sistema y editores
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

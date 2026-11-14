@@ -1,0 +1,6 @@
+# Finales de línea LF en todos los sistemas (el equipo usa Linux y otros SO)
+* text=auto eol=lf
+
+*.sh  text eol=lf
+*.png binary
+*.pdf binary

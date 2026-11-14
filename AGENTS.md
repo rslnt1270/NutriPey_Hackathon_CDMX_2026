@@ -25,9 +25,9 @@ La estructura es la propuesta para la decisión D1 (monolito Next.js con Postgre
 | :--- | :--- | :--- |
 | **Pagos** | `src/server/ledger/`, `src/server/pey/`, `src/server/notificaciones/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, outbox, migraciones. |
 | **Campus** | `app/(pos)/`, `app/(tutor)/`, `app/(escuela)/`, `app/api/pos/`, `src/server/reglas/`, `src/server/catalogo/`, `src/lib/nfc/` | POS, Web NFC, catálogo SEP, reglas del tutor, reportes, UI. |
-| **Compartido** | `package.json`, lockfile, `db/migrations/`, `src/server/ledger/index.ts`, `docs/contracts/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/` | Solo se cambia en un PR dedicado, pequeño, que se fusiona antes que el resto. |
+| **Compartido** | `package.json`, lockfile, `db/migrations/`, `src/server/ledger/index.ts`, `docs/contratos/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/` | Solo se cambia en un PR dedicado, pequeño, que se fusiona antes que el resto. |
 
-**Frontera entre carriles:** Campus nunca escribe SQL sobre tablas del ledger. Llama a las funciones que Pagos exporta desde `src/server/ledger/index.ts` (`cobrar`, `anular`, `acreditarRecarga`, `saldo`). La firma de esas funciones se acuerda en `docs/contracts/` antes de implementarlas.
+**Frontera entre carriles:** Campus nunca escribe SQL sobre tablas del ledger. Llama a las funciones que Pagos exporta desde `src/server/ledger/index.ts` (`cobrar`, `anular`, `acreditarRecarga`, `saldo`). La firma de esas funciones se acuerda en `docs/contratos/` antes de implementarlas.
 
 **Migraciones:** solo el carril Pagos las crea, con prefijo de fecha y hora (`20261116_1030_nombre.sql`). Nunca edites una migración ya fusionada.
 

@@ -5,12 +5,12 @@ description: Invariantes y pruebas obligatorias del ledger de doble partida. Usa
 
 # Cambios al ledger
 
-El modelo está en `docs/diagrams/02_data_model_erd.md`. Esta guía es la lista que todo cambio de dinero debe cumplir.
+El modelo está en `docs/02_modelo_de_datos.md`. Esta guía es la lista que todo cambio de dinero debe cumplir.
 
 ## Antes de escribir
 
 1. Confirma que el issue es del carril Pagos. Si eres del carril Campus, no edites el ledger: pide el cambio.
-2. Si cambia la firma de una función exportada, primero va un PR a `docs/contracts/ledger.md`.
+2. Si cambia la firma de una función exportada, primero va un PR a `docs/contratos/ledger.md`.
 
 ## Invariantes
 

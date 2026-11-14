@@ -65,7 +65,7 @@ issue tramite "Contactar una cooperativa escolar para el piloto" \
 issue compartido "Decidir carriles, stack (D1) y hospedaje" \
   "Las dos personas. Al cerrar: completar la tabla de docs/06, añadir .github/CODEOWNERS y completar deploy-check. $REF"
 issue compartido "Proteger main: PR obligatorio y una aprobación" "$REF"
-issue compartido "Aprobar el contrato del ledger (docs/contracts/ledger.md)" \
+issue compartido "Aprobar el contrato del ledger (docs/contratos/ledger.md)" \
   "Resolver las preguntas abiertas del borrador. Lo aprueban las dos personas. $REF"
 issue compartido "PR de esqueleto del proyecto" \
   "Una persona, un agente. Proyecto, carpetas de los carriles, linter, pruebas, CI y .env.example. Nadie crea archivos de aplicación antes de fusionarlo. Depende de: decidir stack. $REF"
@@ -75,7 +75,7 @@ P="Leer .claude/skills/ledger-change/SKILL.md y .claude/skills/pey-codi/SKILL.md
 issue carril:pagos "Ledger simulado con las firmas del contrato" \
   "src/server/ledger/index.ts con datos en memoria. Debe poder producir cada MotivoRechazo. Desbloquea al carril Campus. $P"
 issue carril:pagos "Migración inicial del esquema" \
-  "Tablas, restricciones e índices de docs/diagrams/02_data_model_erd.md. Incluye CHECK de saldo y trigger de partida doble. $P"
+  "Tablas, restricciones e índices de docs/02_modelo_de_datos.md. Incluye CHECK de saldo y trigger de partida doble. $P"
 issue carril:pagos "acreditarRecarga y saldo reales" \
   "Con pruebas de idempotencia por referenciaPago contra PostgreSQL real. $P"
 issue carril:pagos "Cliente de pey: POST /codi/qr y POST /codi/pn" \

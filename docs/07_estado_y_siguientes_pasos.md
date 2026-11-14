@@ -13,12 +13,14 @@
 | Auditoría de la idea y la arquitectura | [05_auditoria_y_decisiones.md](./05_auditoria_y_decisiones.md) |
 | Acuerdo de trabajo colaborativo | [06_trabajo_colaborativo.md](./06_trabajo_colaborativo.md) y [AGENTS.md](../AGENTS.md) |
 | Skills y subagentes | `.claude/skills/` y `.claude/agents/` |
-| Contrato del ledger | Borrador en [contracts/ledger.md](./contracts/ledger.md) |
+| Contrato del ledger | Borrador en [contratos/ledger.md](./contratos/ledger.md) |
 | Gráficas del contexto educativo y regulatorio | [analisis/](../analisis/README.md): datos de la SEP y ENSANUT, siete gráficas en R. |
 | Lista de issues iniciales | `scripts/crear_etiquetas_e_issues.sh`, pendiente de ejecutar. |
 | Código de aplicación | **No existe todavía.** |
 
 Todo lo anterior está fusionado en `main` desde el 14 de noviembre de 2026. Los seis diagramas Mermaid se comprobaron renderizados en GitHub.
+
+La documentación se reorganizó después en `docs/01` a `docs/07`, con CI que verifica los enlaces internos.
 
 Esa fusión se hizo directo a `main`, por decisión del equipo, para cerrar la fase de consolidación. **A partir de aquí aplica el acuerdo:** todo cambio entra por rama y PR.
 
@@ -74,7 +76,7 @@ Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
 
 - [x] Documentación v1.1, acuerdo de colaboración, skills, subagentes y gráficas fusionados en `main`.
 - [ ] Las dos personas leen `docs/05`, `docs/06` y `AGENTS.md`, y anotan desacuerdos como issues.
-- [ ] Proteger `main`: PR obligatorio y una aprobación.
+- [ ] Proteger `main`: PR obligatorio, una aprobación y la verificación *Documentación / Enlaces internos* como requerida.
 - [ ] Crear etiquetas e issues: `gh auth login` y luego `bash scripts/crear_etiquetas_e_issues.sh --crear`. Sin `--crear` solo muestra lo que haría.
 
 ### Paso 1 — Decidir (las dos personas)
@@ -83,7 +85,7 @@ Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
 - [ ] **D1, stack:** recomendación, monolito Next.js con PostgreSQL.
 - [ ] **Hospedaje** de `nutripey.y4ga.app` y de la base de datos.
 - [ ] **D2, WhatsApp:** Meta directo o Twilio.
-- [ ] Aprobar el borrador de [contracts/ledger.md](./contracts/ledger.md).
+- [ ] Aprobar el borrador de [contratos/ledger.md](./contratos/ledger.md).
 - [ ] Añadir `.github/CODEOWNERS` con los usuarios de cada carril.
 
 ### Paso 2 — Esqueleto (una persona, un agente)

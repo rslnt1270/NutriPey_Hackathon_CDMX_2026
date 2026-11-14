@@ -10,7 +10,7 @@
 
 Con dos personas y hasta seis sesiones de agentes, los choques vienen de tres lugares:
 
-1. **Dos agentes en el mismo directorio.** Uno cambia de rama o reescribe un archivo mientras el otro trabaja. Ya pasó hoy: Antigravity y Claude Code compartieron el mismo directorio.
+1. **Dos agentes en el mismo directorio.** Uno cambia de rama o reescribe un archivo mientras el otro trabaja. Ocurrió durante la fase de especificación, cuando Antigravity y Claude Code compartieron directorio.
 2. **Dos agentes en la misma tarea**, porque nadie sabía que el otro ya la tenía.
 3. **Dos ramas que tocan los mismos archivos**: el esquema de base de datos, `package.json`, un tipo compartido.
 
@@ -47,7 +47,7 @@ Las rutas exactas están en [AGENTS.md](../AGENTS.md#carriles-y-rutas).
 ### 2.4 La frontera es un contrato escrito
 Campus necesita cobrar, y cobrar es del ledger. Para que nadie espere a nadie:
 
-1. El primer día se escribe `docs/contracts/ledger.md` con la firma de `cobrar`, `anular`, `acreditarRecarga` y `saldo`.
+1. El primer día se escribe `docs/contratos/ledger.md` con la firma de `cobrar`, `anular`, `acreditarRecarga` y `saldo`.
 2. Pagos entrega una versión simulada de esas funciones en el primer PR.
 3. Campus construye contra la simulación mientras Pagos implementa la real.
 

@@ -3,7 +3,7 @@
 **Versión:** 1.1  
 **Fecha:** 14 de noviembre de 2026  
 **Proyecto:** NutriPey (Ecosistema Escolar de Pagos Digitales CoDi)  
-**Cambios respecto a 1.0:** ver [Auditoría y Decisiones](../05_auditoria_y_decisiones.md).
+**Cambios respecto a 1.0:** ver [Auditoría y Decisiones](./05_auditoria_y_decisiones.md).
 
 ---
 

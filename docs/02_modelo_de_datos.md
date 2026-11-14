@@ -2,7 +2,7 @@
 
 **Versión:** 1.1  
 **Arquitectura de Datos:** PostgreSQL con ledger de doble partida.  
-**Cambios respecto a 1.0:** ver [Auditoría y Decisiones](../05_auditoria_y_decisiones.md#a3-modelo-de-datos).
+**Cambios respecto a 1.0:** ver [Auditoría y Decisiones](./05_auditoria_y_decisiones.md#a3-modelo-de-datos).
 
 Convenciones: los montos son enteros en centavos (`bigint`), las fechas son `timestamptz` en UTC y los identificadores propios son UUID.
 
