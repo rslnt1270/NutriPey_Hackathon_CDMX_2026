@@ -1,48 +1,136 @@
 # Seguridad, Privacidad y Cumplimiento Normativo — NutriPey
 
-**Versión:** 1.0  
-**Enfoque:** Protección de la Infancia, Ciberseguridad Bancaria y Cumplimiento Normativo Nacional.
+**Versión:** 1.1  
+**Enfoque:** protección de menores, integridad del dinero y cumplimiento normativo.  
+**Cambios respecto a 1.0:** ver [Auditoría y Decisiones](../05_auditoria_y_decisiones.md).
 
 ---
 
-## 1. Protección de la Privacidad de los Menores de Edad
-De acuerdo con la *Ley General de los Derechos de Niñas, Niños y Adolescentes* y la regulación en materia de protección de datos personales (INAI):
+## 1. Posición Regulatoria: NutriPey no custodia fondos
 
-1. **Datos Cero en el Wearable (Zero-Knowledge Chip):**
-   - El chip NFC de la pulsera no almacena nombres, apellidos, saldo, alergias ni fotos del menor.
-   - Solo almacena un identificador único global (UUIDv4) tokenizado y ofuscado mediante hash salt. Si un tercero ilegítimo lee la pulsera en la calle con un teléfono, solo obtiene una cadena hexadecimal aleatoria sin sentido.
-2. **Foto y Datos Visibles Exclusivamente en el Momento del Cobro:**
-   - La foto del menor se renderiza en la pantalla del cajero durante 3 segundos únicamente para verificar que quien porta la pulsera es el alumno legítimo, evitando robos de pulseras entre compañeros de clase.
-3. **Cero Custodia de Datos Bancarios de los Padres:**
-   - NutriPey no solicita ni almacena números de tarjeta, CVVs ni contraseñas bancarias. Todas las recargas se procesan mediante la infraestructura regulada de **CoDi (Banco de México)** a través del API de **pey**, donde el padre autoriza directamente dentro del entorno protegido de su propia aplicación bancaria.
+- Cada recarga CoDi se liquida en la cuenta bancaria de la cooperativa, indicada por `bankAccountId` en cada cobro. NutriPey no tiene cuenta concentradora.
+- El saldo del alumno es un anticipo de consumo ante un solo comercio, la cooperativa de su escuela. No es transferible entre personas ni canjeable en otros comercios.
+- NutriPey no solicita ni almacena tarjetas, contraseñas ni credenciales bancarias. El tutor autoriza dentro de su propia app bancaria.
+- La devolución de saldo la ejecuta la cooperativa por transferencia; NutriPey solo la asienta.
+
+**Riesgo residual:** esta estructura busca quedar fuera de la emisión de fondos de pago electrónico que regula la Ley Fintech. Debe validarla un abogado antes de operar con dinero de familias reales.
 
 ---
 
-## 2. Seguridad en la Integración con pey y Webhooks
+## 2. Datos Personales de Menores
 
-### A. Validación Criptográfica con Standard Webhooks
-Los webhooks de pey que notifican pagos recibidos (`codi.qr.payment_received`) están protegidos contra suplantación y ataques de intermediario (Man-in-the-Middle):
-- Se verifica la cabecera `webhook-signature` utilizando la clave secreta de webhook compartida.
-- Se implementa verificación temporal obligatoria: cualquier evento con una diferencia de tiempo mayor a 300 segundos (5 minutos) respecto a la cabecera `webhook-timestamp` se descarta automáticamente para mitigar **ataques de repetición (Replay Attacks)**.
+Marco aplicable: *Ley General de los Derechos de Niñas, Niños y Adolescentes* y *Ley Federal de Protección de Datos Personales en Posesión de los Particulares* (DOF 20 de marzo de 2025). La autoridad es la Secretaría Anticorrupción y Buen Gobierno, que asumió las funciones del extinto INAI.
 
-### B. Idempotencia Transaccional
-Para evitar que un reintento de webhook de pey acredite saldo dos veces al alumno:
-- Cada evento de pey contiene un identificador único de transacción (`transactionId`).
-- El backend registra cada `transactionId` en una tabla de control con restricción de unicidad (`UNIQUE`). Si se recibe un evento duplicado, el sistema responde `HTTP 200 OK` inmediatamente sin alterar los balances contables.
+| Dato | Clasificación | Tratamiento |
+| :--- | :--- | :--- |
+| Nombre, matrícula, grupo | Personal | Necesario para operar. |
+| Alergias | **Sensible** | Consentimiento expreso del tutor. Cifrado en reposo. Solo se usa para evaluar el cobro. |
+| Foto | Personal, opcional | Consentimiento separado. Por defecto se muestran iniciales y grupo. |
+| Historial de consumo | Personal | Visible solo para los tutores del alumno. |
+| Teléfono del tutor | Personal | WhatsApp y CoDi push. |
 
----
+**Principios**
 
-## 3. Seguridad Física y Operativa del Punto de Venta (NFC)
-
-1. **Mitigación de Cobros Duplicados en Caja (Debounce):**
-   - El lector Web NFC implementa un bloqueo de software de 3 segundos tras cada lectura exitosa para evitar que si el alumno deja la mano cerca de la antena del celular se cobre dos veces.
-2. **Canal Seguro en Tránsito:**
-   - Comunicación de extremo a extremo cifrada mediante **TLS 1.3** con encabezados HSTS estrictos, evitando interceptación de tráfico dentro de la red WiFi escolar.
-3. **Mecanismo de Desconexión Rápida (Kill Switch de Pulsera):**
-   - Desde la app móvil de los padres, ante cualquier sospecha de extravío, existe un botón de "Bloqueo Preventivo" que inhabilita el tag en menos de 100 ms en la base de datos central.
+1. **Consentimiento antes del alta.** El tutor acepta el aviso de privacidad, con consentimiento expreso para datos de salud. Se registra la versión del aviso y la fecha. Puede revocarlo.
+2. **Chip sin datos personales.** La credencial contiene únicamente un token aleatorio. No guarda nombre, saldo, alergias ni foto.
+3. **Minimización en caja.** El cajero ve qué producto retirar, nunca el motivo médico.
+4. **Minimización en WhatsApp.** Los mensajes pasan por un tercero (Meta o Twilio), declarado como encargado en el aviso de privacidad. Usan el nombre de pila y no incluyen alergias.
+5. **Reportes agregados.** La dirección escolar y SEDECO reciben totales por categoría y periodo, con un mínimo de alumnos por grupo para evitar la reidentificación.
+6. **Retención.** Al egresar el alumno se eliminan foto, reglas y alergias. Los asientos contables se conservan disociados.
 
 ---
 
-## 4. Auditoría y Trazabilidad para SEDECO y Mesas Directivas
-- Registro inmutable de eventos de auditoría (*Audit Log*): cada cambio de balance, asignación de tag, intento de cobro rechazado por política de salud y actualización de reglas nutricionales queda sellado con marca de tiempo UTC y firma del operador.
-- Reporte mensual automatizado de dispersión y conciliación fiscal para la Cuenta Nivel 2 Bis de la cooperativa escolar.
+## 3. Integración con pey y Webhooks
+
+### A. Verificación de firma (Standard Webhooks)
+- Se usa la librería oficial `standardwebhooks` con el secreto `whsec_...` del webhook.
+- La verificación se hace sobre el **cuerpo crudo** de la petición, antes de parsear el JSON.
+- Se rechazan eventos cuyo `webhook-timestamp` difiera más de 5 minutos, lo que limita los ataques de repetición.
+- Una firma inválida responde 401 y no produce ningún efecto.
+
+### B. Idempotencia en dos niveles
+- **Evento:** la cabecera `webhook-id` se inserta en `WEBHOOK_EVENTO` con restricción de unicidad. pey la documenta como llave de idempotencia. Un reintento responde 200 sin efectos.
+- **Pago:** `pey_transaction_id` es único en `RECARGA`. El mismo pago no se acredita dos veces aunque llegue por webhook y por conciliación.
+
+### C. Integridad del monto
+- Se acredita el `amount` del evento firmado. Nunca el monto que envió el navegador.
+- Los cobros se crean con monto fijo y expiración de 600 segundos.
+- Un pago que no corresponde a una recarga pendiente queda en `REVISION`.
+
+### D. Secretos
+- La API key de pey y el secreto del webhook viven en variables de entorno del servidor. Nunca en el repositorio ni en el cliente.
+- Cada API key admite un solo webhook. El secreto se puede rotar desde el portal de pey.
+- pey no tiene sandbox: las pruebas usan la llave de producción con montos de $0.01 MXN. La llave de desarrollo y la de la demo deben ser distintas.
+
+### E. Conciliación
+Una tarea consulta en pey las recargas pendientes y, una vez al día, compara las transacciones de la cuenta bancaria contra el ledger. Los webhooks son el camino rápido, no la única fuente.
+
+---
+
+## 4. Credenciales NFC y Clonación
+
+### A. Modelo de amenaza
+Un tag con identificador estático puede copiarse con un celular y una app gratuita. Hashear u ofuscar el identificador no lo evita: quien copia la cadena la reproduce tal cual. El número de serie de fábrica tampoco protege, porque existen tags con serie reescribible.
+
+Web NFC solo expone mensajes NDEF y el número de serie. No permite usar desde el navegador la contraseña ni la firma de originalidad de los NTAG21x.
+
+### B. Nivel 1: demo y piloto (NTAG213/215)
+El tag contiene una URL NDEF con un token aleatorio de 128 bits:
+
+`https://nutripey.y4ga.app/t/<token>`
+
+El backend guarda solo el SHA-256 del token. **Este nivel es clonable** y se sostiene con controles compensatorios:
+
+- Tope diario y saldo bajos, que acotan la pérdida máxima.
+- Iniciales, grupo o foto en pantalla tras cada cobro.
+- Anulación por el cajero durante 2 minutos.
+- Bloqueo por el tutor, efectivo desde la siguiente lectura.
+- Aviso al tutor en cada compra o en el resumen diario.
+- PIN del alumno por encima de un monto configurable (posterior al MVP).
+
+### C. Nivel 2: producción (NTAG 424 DNA)
+El chip genera en cada lectura una URL distinta con datos cifrados, un contador de lecturas y un código de autenticación (SUN/SDM con AES-128).
+
+- El backend descifra, verifica el código y exige que el contador sea mayor al último aceptado.
+- Una lectura copiada no funciona por segunda vez.
+- El identificador visible cambia en cada tap, lo que impide rastrear al menor fuera de la escuela.
+- Es compatible con Web NFC y con el lector nativo de iPhone, porque el resultado es una URL NDEF.
+- La llave de cada tag se guarda cifrada en el servidor.
+
+### D. Fallbacks
+- **QR en carnet:** es estático y fotocopiable. Aplican los controles del nivel 1.
+- **Matrícula más PIN:** el PIN es segundo factor. Cinco intentos fallidos bloquean el acceso por 15 minutos.
+
+---
+
+## 5. Punto de Venta
+
+1. **Sesión del cajero.** Cada POS inicia sesión con un operador. Sin sesión no hay cobro.
+2. **Idempotencia del cobro.** El POS genera una llave por venta. Los reintentos de red no duplican cargos.
+3. **Bloqueo de lectura.** Tras una lectura, el POS ignora nuevas lecturas hasta que el cajero inicia otra venta. Es una ayuda de interfaz; la garantía real es la llave de idempotencia.
+4. **Precios en servidor.** El POS envía identificadores y cantidades.
+5. **Sin sobregiro.** Bloqueo de fila y `CHECK (saldo_centavos >= 0)`.
+6. **Transporte.** HTTPS con TLS 1.2 o superior y HSTS. Web NFC exige HTTPS.
+7. **Efectivo.** Las recargas en efectivo quedan ligadas al cajero y se cuadran en el corte de caja.
+8. **Límite de peticiones** en los endpoints de cobro y de PIN, por operador y por credencial.
+
+---
+
+## 6. Auditoría y Trazabilidad
+
+- `ASIENTO_CONTABLE` y `TRANSACCION` son de solo inserción.
+- `AUDIT_LOG` registra actor, acción y hora UTC para: cobros rechazados, anulaciones, recargas en efectivo, cambios de reglas, altas y bajas de credenciales, y accesos a datos de salud.
+- Reporte mensual por cooperativa: abonos recibidos contra el límite de su cuenta, ventas y saldo pendiente de entregar.
+- Reporte de cumplimiento de la SEP por escuela, agregado.
+
+---
+
+## 7. Riesgos Abiertos
+
+| Riesgo | Estado |
+| :--- | :--- |
+| Calificación legal del anticipo de consumo | Pendiente de validación por abogado. |
+| Clonación en nivel 1 | Aceptado para demo y piloto con topes bajos. Migrar a NTAG 424 DNA antes de escalar. |
+| Sin sandbox de pey | Mitigado con montos de $0.01 y llaves separadas. |
+| Dependencia de conectividad en caja | Mitigado con datos móviles. Sin modo offline en el MVP. |
+| Aviso de privacidad | Por redactar antes del primer alumno real. |

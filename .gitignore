@@ -9,3 +9,9 @@ build/
 .DS_Store
 .venv*
 __pycache__/
+
+# Configuración local de agentes y worktrees
+.claude/settings.local.json
+.claude/worktrees/
+.env*
+!.env.example
