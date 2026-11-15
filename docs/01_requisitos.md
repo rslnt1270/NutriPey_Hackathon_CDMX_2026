@@ -90,7 +90,7 @@ La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre pe
 
 - **RF-22 (Alta con consentimiento):** el alta de un alumno exige la aceptación del aviso de privacidad por el tutor, con consentimiento expreso y separado para datos de alergias y, si aplica, para la foto.
 
----
+### 3.6 Mensajería e informes asistidos
 
 - **RF-23 (Vinculación de mensajería):** verificar destinatario, consentimiento y relación tutor/alumno antes de habilitar Telegram o WhatsApp; permitir revocación. Un canal operativo es suficiente para la entrega.
 - **RF-24 (Resumen asistido, opcional):** Bedrock podrá redactar reportes agregados ya calculados; nunca decidir saldo, cobro, alergias o cumplimiento. Con fallo se conserva el reporte numérico. Requiere decisión de adopción y evaluación independiente.
@@ -104,8 +104,6 @@ La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre pe
 - **RNF-05 (Disponibilidad):** el POS requiere conexión y usa datos móviles como respaldo del WiFi. Ante una caída, la cooperativa cobra en efectivo.
 - **RNF-06 (Trazabilidad):** cada cobro, anulación, recarga en efectivo y cambio de reglas registra quién lo hizo y cuándo.
 - **RNF-07 (Pruebas de pagos):** pey no tiene sandbox. La integración se prueba en producción con montos de $0.01 MXN.
-
----
 
 - **RNF-08 (Reproducibilidad):** imágenes Docker versionadas, arranque documentado, healthcheck, migraciones explícitas y PostgreSQL persistente sin puerto público.
 - **RNF-09 (Recuperación):** respaldos cifrados y restauración ensayada en entorno aislado; registrar RPO/RTO medidos y objetivos acordados antes del 7 diciembre.
