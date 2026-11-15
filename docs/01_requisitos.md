@@ -1,7 +1,7 @@
 # Especificación de Requerimientos del Sistema (SRS) — NutriPey
 
-**Versión:** 1.2
-**Fecha:** 15 de noviembre de 2026
+**Versión:** 1.2<br>
+**Fecha:** 15 de noviembre de 2026<br>
 **Proyecto:** NutriPey (Ecosistema Escolar de Pagos Digitales CoDi)  
 **Cambios respecto a 1.0:** ver [Auditoría y Decisiones](./05_auditoria_y_decisiones.md).
 
