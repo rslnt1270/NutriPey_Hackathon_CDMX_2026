@@ -5,9 +5,11 @@ const mxn = (c) => "$" + (c / 100).toLocaleString("es-MX", { minimumFractionDigi
 const hora = (ms) => new Date(ms).toLocaleTimeString("es-MX", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 const nuevaLlave = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 
+const sesion = window.SesionDemo.crearSesion();
 let st, monto, recargaPendiente, carrito, ultimoCobro;
 
 function iniciar() {
+  sesion.reiniciar(); // A1: ninguna recarga de la sesión anterior escribe en la nueva
   st = L.crearEstado();
   monto = 5000; recargaPendiente = null; carrito = {}; ultimoCobro = null;
   $("w-chat").innerHTML = "";
@@ -101,7 +103,7 @@ $("t-pagar").addEventListener("click", () => {
   $("t-pagar").disabled = true;
   $("t-estado").textContent = "Banco procesando… (webhook simulado)";
   const rec = recargaPendiente; recargaPendiente = null;
-  setTimeout(() => {
+  sesion.despues(() => {
     L.acreditarRecarga(st, { ...rec, ahora: Date.now() });
     const a = st.alumnos[rec.alumnoId];
     $("t-estado").textContent = `✅ Recarga acreditada: ${mxn(rec.centavos)} (pago simulado)`;
