@@ -82,8 +82,8 @@ Primero base y Pagos; Campus inicia tras #12. El [plan vigente](./superpowers/pl
 ### Paso 1 — Decidir (las dos personas)
 
 - [x] **Responsables por tarea**, sin dueños permanentes de carril.
-- [x] **D1:** monolito modular Next.js con PostgreSQL; diseño con Docker.
-- [x] **Proveedor:** AWS; EC2 inicial. Región, costo y base de datos separada pendientes.
+- [x] **D1:** monolito modular Next.js con PostgreSQL. Docker propuesto en PR #18.
+- [x] **Proveedor:** AWS. EC2 inicial propuesto en PR #18; región, costo y base de datos separada pendientes.
 - [ ] **D2:** Telegram o WhatsApp Cloud; n8n local disponible, alojamiento continuo pendiente.
 - [ ] Aprobar el borrador de [contratos/ledger.md](./contratos/ledger.md).
 - [ ] Añadir `.github/CODEOWNERS` con los usuarios de cada carril.

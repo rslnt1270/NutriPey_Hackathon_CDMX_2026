@@ -19,7 +19,7 @@ NutriPey atiende tres problemas:
 
 ## Arquitectura
 
-Circuito abierto para recargar, circuito cerrado para cobrar en la escuela. Diseño base: monolito modular Next.js + PostgreSQL, Docker y despliegue inicial en AWS EC2. n8n orquesta avisos fuera de la transacción. Lambda/SQS y Bedrock son evaluaciones opcionales, no servicios implementados.
+Circuito abierto para recargar, circuito cerrado para cobrar en la escuela. Decididos: monolito modular Next.js + PostgreSQL y AWS. Propuesta del PR #18: Docker y despliegue inicial en EC2. n8n orquesta avisos fuera de la transacción. Lambda/SQS y Bedrock son evaluaciones opcionales, no servicios implementados.
 
 ```mermaid
 flowchart TD

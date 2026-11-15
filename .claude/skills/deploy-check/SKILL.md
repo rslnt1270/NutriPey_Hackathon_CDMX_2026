@@ -5,7 +5,7 @@ description: Lista de verificación para desplegar NutriPey y prueba de humo pos
 
 # Despliegue de NutriPey
 
-> **Decidido:** AWS, Docker y EC2 inicial. Pendientes: región, recursos, presupuesto y destino de PostgreSQL. Añadir comandos reproducibles al implementar; no implica que exista un despliegue.
+> **Decidido:** AWS. **Propuesta para aprobación del PR #18:** Docker y EC2 inicial. Pendientes: región, recursos, presupuesto y destino de PostgreSQL. Añadir comandos reproducibles al implementar; no implica que exista un despliegue.
 
 Desplegar a producción es una acción visible y difícil de revertir. Pide confirmación a la persona antes de ejecutar el despliegue; esta guía no la sustituye.
 

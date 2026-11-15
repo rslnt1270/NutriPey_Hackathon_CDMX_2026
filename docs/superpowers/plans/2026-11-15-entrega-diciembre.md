@@ -3,7 +3,7 @@
 > **Para agentes:** usar `superpowers:executing-plans` para ejecutar por tarea. No iniciar varias sesiones sobre el mismo worktree ni implementar un bloque que dependa de contratos sin aprobar.
 
 **Objetivo:** construir y verificar el flujo completo después del prototipo kickoff.
-**Arquitectura:** monolito modular, PostgreSQL transaccional y avisos asíncronos. Docker/EC2 inicial; extensiones por decisión documentada.
+**Arquitectura:** monolito modular, PostgreSQL transaccional y avisos asíncronos. Docker/EC2 inicial propuestos en PR #18; extensiones por decisión documentada.
 **Stack:** Next.js, PostgreSQL, Docker, AWS, pey y n8n; Telegram/WhatsApp por elegir.
 **Spec:** [especificación de entrega](../../08_spec_entrega_diciembre.md). Este es el plan maestro; cada issue amplio se divide en PR menores de 400 líneas antes de implementar.
 

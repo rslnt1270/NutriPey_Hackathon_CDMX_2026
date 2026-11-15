@@ -142,5 +142,5 @@ Los tres revisan y reportan; ninguno escribe código. Es deliberado: con dos per
 
 - [x] Asignar responsables por issue; consultar el [plan](./superpowers/plans/2026-11-15-entrega-diciembre.md).
 - [ ] Proteger `main` en GitHub (PR obligatorio y una aprobación).
-- [ ] Completar región, tamaño, presupuesto y separación de PostgreSQL en AWS; EC2 es la base inicial.
+- [ ] Completar región, tamaño, presupuesto y separación de PostgreSQL en AWS; EC2 es la propuesta inicial del PR #18.
 - [ ] Añadir `.github/CODEOWNERS` con revisores acordados, sin imponer propiedad permanente de carriles.
