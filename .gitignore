@@ -32,3 +32,6 @@ Thumbs.db
 
 # Caché de TypeScript
 *.tsbuildinfo
+
+# Archivo de tipos generado por Next.js
+next-env.d.ts
