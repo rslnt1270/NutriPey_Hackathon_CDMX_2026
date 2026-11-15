@@ -9,7 +9,7 @@
 
 ## Restricciones globales
 
-Un issue, una persona responsable, una rama y un worktree. Abrir PR en borrador al empezar; contratos/infraestructura en PR compartido previo. Campus no escribe SQL del ledger. Dinero entero, asientos inmutables, cuenta bloqueada e idempotencia. Pruebas pey solo $0.01 MXN y datos ficticios. Las fechas siguientes son objetivos, no evidencia de avance; hora final del 12 diciembre pendiente de confirmar.
+Un issue, una persona responsable, una rama y un worktree. Abrir PR en borrador al empezar; contratos en PR compartido previo; infraestructura/automatización en PR dedicado antes de sus dependientes. Campus no escribe SQL del ledger. Dinero entero, asientos inmutables, cuenta bloqueada e idempotencia. Pruebas pey solo $0.01 MXN y datos ficticios. Las fechas siguientes son objetivos, no evidencia de avance; hora final del 12 diciembre pendiente de confirmar.
 
 ## Responsables y revisión
 
