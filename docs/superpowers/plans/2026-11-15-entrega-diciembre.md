@@ -1,6 +1,6 @@
 # Plan de implementación — entrega NutriPey del 12 de diciembre
 
-> **Para agentes:** usar `superpowers:executing-plans` para ejecutar por tarea. No iniciar varias sesiones sobre el mismo worktree ni implementar un bloque que dependa de contratos sin aprobar.
+> **Para agentes:** seguir la secuencia por issue de este documento; `superpowers:executing-plans` es opcional si está instalada, no un requisito del repo. No iniciar varias sesiones sobre el mismo worktree ni implementar un bloque que dependa de contratos sin aprobar.
 
 **Objetivo:** construir y verificar el flujo completo después del prototipo kickoff.
 **Arquitectura:** monolito modular, PostgreSQL transaccional y avisos asíncronos. Docker/EC2 inicial propuestos en PR #18; extensiones por decisión documentada.

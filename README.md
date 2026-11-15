@@ -88,7 +88,7 @@ Las cifras regulatorias deben confirmarse en el DOF antes de presentarse. Fuente
 | 06 | [Trabajo colaborativo](./docs/06_trabajo_colaborativo.md) | Carriles, ramas y papel de cada herramienta de IA. |
 | 07 | [Estado y siguientes pasos](./docs/07_estado_y_siguientes_pasos.md) | Punto de retoma y tareas en orden. |
 | 08 | [Spec de entrega](./docs/08_spec_entrega_diciembre.md) | Alcances, arquitectura, criterios de aceptación y decisiones. |
-| 09 | [Plan de ejecución](./docs/superpowers/plans/2026-11-15-entrega-diciembre.md) | Tareas, rutas, dependencias, responsables y verificaciones. |
+| Plan | [Plan de ejecución](./docs/superpowers/plans/2026-11-15-entrega-diciembre.md) | Tareas, rutas, dependencias, responsables y verificaciones. |
 | — | [Contrato del ledger](./docs/contratos/ledger.md) | Frontera entre los carriles Pagos y Campus (borrador). |
 | — | [Análisis](./analisis/README.md) | Datos de la SEP y ENSANUT con gráficas en R. |
 
