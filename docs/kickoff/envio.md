@@ -2,7 +2,7 @@
 
 15 noviembre 2026 · Sub-issue #32 de #15 · PR de la demo: #31.
 Meta: materiales listos 12:00, envío humano antes de 12:30; límite 13:00 CDMX.
-Estado: materiales en PR #33; demo corregida publicada y validada por Codex. Formulario todavía no enviado por Codex.
+Estado: materiales en PR #33; demo corregida publicada y validada por Codex. El usuario confirmó el envío del formulario el 15 noviembre; #15 cerrado. Codex no realizó el envío ni guarda la confirmación privada.
 Publicación: `83e786ab97e7382574575df679fc65e59a92a9ac`, desde integración `c996590979e5fc01b6b4e1ac5659f77250da0ea7` (PR #31 aprobado y fusionado). Build de Pages `43745883874` exitoso.
 Verificación en vivo: seis archivos idénticos al origen; 61/62 comprobaciones del script pasan en escritorio y 390 px. Única falla: consola registra 404 de `/favicon.ico`; todos los controles funcionales y A1 pasan. No probado en teléfono físico.
 
@@ -64,7 +64,7 @@ Video: pendiente de grabación y enlace público. Es opcional; no retrasar el en
 | Nombre del equipo | Sí | pendiente — confirmar por canal privado; no asumir que coincide con la marca del proyecto. |
 | Descripción del proyecto | Sí | Copiar los tres párrafos de «Descripción para el formulario», ajustados a la versión realmente publicada. |
 | Repositorio de código público (URL) | Sí | https://github.com/rslnt1270/NutriPey_Hackathon_CDMX_2026/tree/integracion/demo-kickoff/demo — enlace al código integrado mediante #31; incluye `sesion.js`. No está en `main`. |
-| Link de la app en vivo (preferido) | No | https://rslnt1270.github.io/NutriPey_Hackathon_CDMX_2026/ — publicación corregida comprobada; abrir una vez más antes de enviar. |
+| Link de la app en vivo (preferido) | No | https://nutripey.y4ga.app/ — publicación corregida comprobada; abrir una vez más antes de enviar. |
 | Video demo (opcional) | No | pendiente — enlace de acceso público, si se graba. |
 | Correos de los integrantes del equipo | Sí | pendiente — introducir uno por línea directamente en el formulario, usando los del registro Luma. Nunca guardarlos en este archivo ni en GitHub. |
 | Comentarios sobre API pey | Sí | Copiar los dos párrafos de comentarios de esta página, conservando que no hubo pagos reales. |
@@ -78,6 +78,8 @@ Video: pendiente de grabación y enlace público. Es opcional; no retrasar el en
 - [ ] Confirmar que los avisos y pagos siguen rotulados como simulados y no aparecen datos personales.
 - [ ] M1: confirmar que #31 está fusionado en `integracion/demo-kickoff` y que el enlace al código indicado en el formulario abre `demo/` desde una ventana sin sesión; comprobar también el video, si existe.
 - [ ] Una persona completa los datos privados, revisa los ocho campos y envía antes de 12:30.
-- [ ] Esa persona conserva la confirmación de envío en privado. No marcar entregado antes de obtenerla.
+- [x] El usuario confirmó el envío; conservar la confirmación en privado. No se guarda aquí.
 
 Codex prepara estos materiales; no fusiona PR, no publica `gh-pages` y no envía el formulario en esta tarea.
+
+Seguimientos diferidos de la revisión de la demo: M1 → #34, M2 → #35 y L1 → #36. El formulario enviado no implica que esos hallazgos estén corregidos.
