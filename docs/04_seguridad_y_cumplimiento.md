@@ -34,7 +34,7 @@ Marco aplicable: *Ley General de los Derechos de Niñas, Niños y Adolescentes* 
 1. **Consentimiento antes del alta.** El tutor acepta el aviso de privacidad, con consentimiento expreso para datos de salud. Se registra la versión del aviso y la fecha. Puede revocarlo.
 2. **Chip sin datos personales.** La credencial contiene únicamente un token aleatorio. No guarda nombre, saldo, alergias ni foto.
 3. **Minimización en caja.** El cajero ve qué producto retirar, nunca el motivo médico.
-4. **Minimización en mensajería.** Identificar en el aviso a los proveedores elegidos (Telegram o WhatsApp y alojamiento n8n). Verificar consentimiento y destinatario; omitir nombres y alergias del menor. Configurar retención de ejecuciones y evitar payloads personales en logs.
+4. **Minimización en mensajería.** Identificar en el aviso a los proveedores elegidos (Telegram o WhatsApp y alojamiento n8n). Verificar consentimiento y destinatario; omitir nombres y alergias del menor. Distinguir alumnos con un alias neutro asignado (p. ej., «Alumno A»), visible en la app del tutor, sin iniciales reales ni texto libre con datos personales. El vínculo alias/alumno es privado y el destino debe estar autorizado. Configurar retención de ejecuciones y evitar payloads personales en logs.
 5. **Reportes agregados.** La dirección escolar y SEDECO reciben totales por categoría y periodo, con un mínimo de alumnos por grupo para evitar la reidentificación.
 6. **Retención.** Al egresar el alumno se eliminan foto, reglas y alergias. Los asientos contables se conservan disociados.
 
