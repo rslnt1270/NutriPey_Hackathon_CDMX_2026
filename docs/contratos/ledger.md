@@ -108,7 +108,7 @@ function saldo(estudianteId: string): Promise<{
 
 ---
 
-## Versión simulada
+## Fixtures y validación antes de Campus
 
 Los fixtures permiten probar cada `MotivoRechazo` y preparar el prototipo. La implementación Campus espera el gate #12 de Pagos; luego debe verificarse con reglas reales dentro de la misma transacción. El contrato de esa integración se acuerda antes de implementar `cobrar`. No se permite activar fixtures en producción.
 

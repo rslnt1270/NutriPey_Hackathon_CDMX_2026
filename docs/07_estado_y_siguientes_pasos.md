@@ -20,7 +20,7 @@
 
 La documentación v1.1 se fusionó el 14 noviembre; esta revisión v1.2 y su planificación se proponen en el PR #18. No confundir documentación con funcionalidad implementada.
 
-La documentación se reorganizó después en `docs/01` a `docs/07`, con CI que verifica los enlaces internos.
+La documentación se reorganizó después en `docs/01` a `docs/08` y el plan en `docs/superpowers/plans/`, con CI que verifica los enlaces internos.
 
 Esa fusión se hizo directo a `main`, por decisión del equipo, para cerrar la fase de consolidación. **A partir de aquí aplica el acuerdo:** todo cambio entra por rama y PR.
 

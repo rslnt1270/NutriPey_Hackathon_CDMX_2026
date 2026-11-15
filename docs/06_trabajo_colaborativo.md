@@ -93,7 +93,7 @@ El repo todavía no tiene código. Si las dos personas generan el esqueleto al m
 
 | # | Tarea | Quién | Bloquea a |
 | :- | :--- | :--- | :--- |
-| 0 | Fusionar la documentación v1.1 y este acuerdo. | Una persona | Todo |
+| 0 | Revisar y fusionar la actualización v1.2 (PR #18); v1.1 ya fusionada. | Una persona | Todo |
 | 1 | Confirmar contrato; D1 ya decidido (Next.js + PostgreSQL). Verificar cuenta pey. | Las dos | 2 |
 | 2 | **PR de esqueleto:** proyecto, carpetas de los carriles, linter, pruebas, CI, `.env.example`. Una sola persona con un solo agente. | Pagos | 3 y 4 |
 | 3 | Contrato del ledger/reglas y validación de Pagos. | Pagos | Campus |

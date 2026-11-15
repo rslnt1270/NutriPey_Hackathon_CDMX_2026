@@ -27,7 +27,7 @@ Marco aplicable: *Ley General de los Derechos de Niñas, Niños y Adolescentes* 
 | Alergias | **Sensible** | Consentimiento expreso del tutor. Cifrado en reposo. Solo se usa para evaluar el cobro. |
 | Foto | Personal, opcional | Consentimiento separado. Por defecto se muestran iniciales y grupo. |
 | Historial de consumo | Personal | Visible solo para los tutores del alumno. |
-| Teléfono del tutor | Personal | WhatsApp y CoDi push. |
+| Teléfono del tutor / destino de mensajería | Personal | Teléfono para CoDi push y WhatsApp; chat_id verificado si se elige Telegram. |
 
 **Principios**
 
