@@ -70,7 +70,7 @@ Objetivo provisional de carga para #23: 20 solicitudes de cobro concurrentes, 1.
 | :--- | :--- | :--- |
 | Cuenta pey ACTIVE y credenciales | rslnt1270, #5, antes de integración real | Bloqueo explícito si falta; simulación solo en prototipo |
 | Región, costo, créditos y recursos existentes | rslnt1270, #30/#11/#23, antes de provisionar | Estimación de cómputo, almacenamiento, red, logs y servicios; alertas no son tope automático |
-| Telegram o WhatsApp Cloud | eri2905, #13, antes del 1 dic | Un canal verificado; no mantener dos por obligación |
+| Telegram o WhatsApp Cloud | eri2905, #13, antes del 1 dic | Un canal verificado; revisar habilitación Meta/plantillas con anticipación y optar por Telegram si bloquea el plazo, sin mantener dos por obligación |
 | PostgreSQL separado y n8n continuo | rslnt1270, #11/#22, antes del 7 dic | Prueba con PC apagada y recuperación; documentar puntos únicos de fallo |
 | Lambda/SQS y Bedrock | Responsables #20/#21, antes del 7 dic | Adoptar con issues de implementación o diferir con razón; no ampliar alcance después del 8 dic |
 | Validación legal y textos regulatorios | Equipo, antes de piloto real | Confirmar fuentes primarias y consentimiento; esta revisión no constituye validación legal |
