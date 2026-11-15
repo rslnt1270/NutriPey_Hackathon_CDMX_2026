@@ -1,6 +1,6 @@
 # Estado del Proyecto y Siguientes Pasos
 
-**Corte:** 14 de noviembre de 2026.
+**Corte:** 15 de noviembre de 2026. Entrega principal: **12 diciembre**; kickoff: prototipo independiente.
 **Propósito:** punto de retoma. Quien abra el repo, persona o agente, empieza aquí.
 
 ---
@@ -15,12 +15,12 @@
 | Skills y subagentes | `.claude/skills/` y `.claude/agents/` |
 | Contrato del ledger | Borrador en [contratos/ledger.md](./contratos/ledger.md) |
 | Gráficas del contexto educativo y regulatorio | [analisis/](../analisis/README.md): datos de la SEP y ENSANUT, siete gráficas en R. |
-| Lista de issues iniciales | `scripts/crear_etiquetas_e_issues.sh`, pendiente de ejecutar. |
+| Issues y responsables | Creados en GitHub; ver [plan vigente](./superpowers/plans/2026-11-15-entrega-diciembre.md). No volver a ejecutar el script de alta inicial. |
 | Código de aplicación | **No existe todavía.** |
 
-Todo lo anterior está fusionado en `main` desde el 14 de noviembre de 2026. Los seis diagramas Mermaid se comprobaron renderizados en GitHub.
+La documentación v1.1 se fusionó el 14 noviembre; esta revisión v1.2 y su planificación se proponen en el PR #18. No confundir documentación con funcionalidad implementada.
 
-La documentación se reorganizó después en `docs/01` a `docs/07`, con CI que verifica los enlaces internos.
+La documentación se reorganizó después en `docs/01` a `docs/08` y el plan en `docs/superpowers/plans/`, con CI que verifica los enlaces internos.
 
 Esa fusión se hizo directo a `main`, por decisión del equipo, para cerrar la fase de consolidación. **A partir de aquí aplica el acuerdo:** todo cambio entra por rama y PR.
 
@@ -61,13 +61,13 @@ Primera instrucción sugerida para cualquier agente: *"Lee AGENTS.md y docs/07_e
 
 ## 3. Lo que hay que hacer, en orden
 
-Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
+Primero base y Pagos; Campus inicia tras #12. El [plan vigente](./superpowers/plans/2026-11-15-entrega-diciembre.md) asigna hitos, responsables y pruebas. La lista siguiente conserva el alcance funcional.
 
 ### Trámites que no dependen del código (empezar ya)
 
 - [ ] **Registrar la CLABE receptora en pey.** Tarda hasta 5 días hábiles. Mientras tanto, usar la cuenta de prueba de pey con $0.01.
 - [ ] **Crear la API key y el webhook en el portal de pey.** Guardar el secreto: se muestra una sola vez.
-- [ ] **Iniciar la verificación del negocio en Meta** para plantillas de WhatsApp, o abrir cuenta de Twilio como plan B.
+- [ ] **Elegir Telegram o WhatsApp Cloud**, verificar destinatarios y consentimiento; no retrasar Pagos por mensajería.
 - [ ] **Comprar tags:** NTAG213 para la demo y dos o tres NTAG 424 DNA.
 - [ ] **Conseguir un Android con NFC** para el POS.
 - [ ] **Contactar una cooperativa escolar** para una prueba piloto.
@@ -77,14 +77,14 @@ Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
 - [x] Documentación v1.1, acuerdo de colaboración, skills, subagentes y gráficas fusionados en `main`.
 - [ ] Las dos personas leen `docs/05`, `docs/06` y `AGENTS.md`, y anotan desacuerdos como issues.
 - [ ] Proteger `main`: PR obligatorio, una aprobación y la verificación *Documentación / Enlaces internos* como requerida.
-- [ ] Crear etiquetas e issues: `gh auth login` y luego `bash scripts/crear_etiquetas_e_issues.sh --crear`. Sin `--crear` solo muestra lo que haría.
+- [x] Crear issues y asignar responsables en GitHub; mantener dependencias y estados al día.
 
 ### Paso 1 — Decidir (las dos personas)
 
-- [ ] **Carriles:** quién lleva Pagos y quién Campus.
-- [ ] **D1, stack:** recomendación, monolito Next.js con PostgreSQL.
-- [ ] **Hospedaje** de `nutripey.y4ga.app` y de la base de datos.
-- [ ] **D2, WhatsApp:** Meta directo o Twilio.
+- [x] **Responsables por tarea**, sin dueños permanentes de carril.
+- [x] **D1:** monolito modular Next.js con PostgreSQL. Docker propuesto en PR #18.
+- [x] **Proveedor:** AWS. EC2 inicial propuesto en PR #18; región, costo y base de datos separada pendientes.
+- [ ] **D2:** Telegram o WhatsApp Cloud; n8n local disponible, alojamiento continuo pendiente.
 - [ ] Aprobar el borrador de [contratos/ledger.md](./contratos/ledger.md).
 - [ ] Añadir `.github/CODEOWNERS` con los usuarios de cada carril.
 
@@ -94,13 +94,13 @@ Los pasos 0 a 3 van en serie. Después los carriles avanzan en paralelo.
 
 Nadie más crea archivos de aplicación hasta que este PR esté fusionado.
 
-### Paso 3 — Contrato y simulación (carril Pagos)
+### Paso 3 — Contrato y validación (carril Pagos)
 
-- [ ] `src/server/ledger/index.ts` con la versión simulada del contrato.
+- [ ] Contrato aprobado, implementación real y fixtures para probar el núcleo; gate #12 antes de Campus.
 
-### Paso 4 — En paralelo
+### Paso 4 — Campus e integración tras el gate de Pagos
 
-Issues iniciales sugeridos. Cada uno es una rama y un PR.
+Issues registrados y desglosados en el plan. Cada tarea implementable es una rama y un PR.
 
 **Carril Pagos**
 
@@ -111,7 +111,7 @@ Issues iniciales sugeridos. Cada uno es una rama y un PR.
 5. Webhook de pey: verificación, deduplicación y acreditación.
 6. Conciliador corto y diario.
 7. `cobrar` y `anular` reales, con prueba de concurrencia.
-8. Cola de notificaciones y envío por WhatsApp.
+8. Cola de notificaciones y envío por el canal elegido mediante n8n.
 
 **Carril Campus**
 
@@ -120,7 +120,7 @@ Issues iniciales sugeridos. Cada uno es una rama y un PR.
 3. Alta de alumno con consentimiento.
 4. Reglas del tutor: alérgenos, categorías y tope diario.
 5. Pantalla de recarga del tutor: QR, push y estado.
-6. POS: carrito, cobro y pantallas de resultado, contra el ledger simulado.
+6. POS: carrito, cobro y pantallas de resultado, contra el ledger real después de #12.
 7. Lectura Web NFC y fallbacks (URL del tag, QR, matrícula más PIN).
 8. Reporte de cumplimiento SEP.
 

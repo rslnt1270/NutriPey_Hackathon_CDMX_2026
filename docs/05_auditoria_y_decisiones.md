@@ -190,8 +190,8 @@ Todo lo que no aparezca en esos cuatro momentos es candidato a recorte.
 
 | # | Decisión | Recomendación |
 | :- | :--- | :--- |
-| D1 | Stack | Un monolito Next.js (App Router) con PostgreSQL. La lógica de dinero vive en transacciones SQL. No separar un servicio FastAPI: duplica despliegue y autenticación para un equipo de dos. |
-| D2 | Canal de WhatsApp | Las plantillas de la API oficial de Meta requieren verificación del negocio y aprobación, que tardan días. Iniciar el trámite ya y tener el sandbox de Twilio como plan B para la demo. |
+| D1 | Stack — decidido 15 nov | Monolito modular Next.js + PostgreSQL y AWS decididos; Docker/EC2 inicial propuestos en PR #18. No implementado todavía. |
+| D2 | Canal — pendiente | Telegram o WhatsApp Cloud vía n8n. Un canal verificado basta para diciembre; n8n local sirve para desarrollo. Si se elige WhatsApp, verificar ahora requisitos de Meta y disponibilidad de cuenta/plantillas: la habilitación puede requerir días. #13 decide antes del 1 dic; Telegram es alternativa si esa habilitación sigue bloqueada. |
 | D3 | Tags para la demo | NTAG213 para el flujo principal y dos o tres NTAG 424 DNA para mostrar la verificación dinámica. |
 | D4 | Cuenta receptora | Registrar hoy una CLABE propia en pey. Mientras se activa, usar la cuenta de prueba con $0.01. |
 | D5 | Escuela piloto | Conseguir una cooperativa real, aunque sea para una prueba de un recreo. Cambia el pitch de propuesta a evidencia. |
@@ -208,3 +208,7 @@ Todo lo que no aparezca en esos cuatro momentos es candidato a recorte.
 - Web NFC: [Chrome for Developers](https://developer.chrome.com/docs/capabilities/nfc?hl=es-419), [MDN NDEFReader](https://developer.mozilla.org/docs/Web/API/NDEFReader).
 
 Las afirmaciones regulatorias provienen de prensa especializada y resúmenes de despachos. Antes de citarlas ante el jurado conviene confirmarlas en el texto del DOF y de la circular.
+
+## 8. Actualización del 15 de noviembre
+
+La [spec de diciembre](./08_spec_entrega_diciembre.md) separa el kickoff del producto final. AWS dispone de 80 créditos reportados (cobertura por verificar); n8n está instalado localmente. Lambda/SQS, Bedrock y RDS requieren evaluación y no se consideran implementados. Responsables por tarea; Pagos precede a Campus. Los hallazgos históricos anteriores no prueban capacidades desplegadas.

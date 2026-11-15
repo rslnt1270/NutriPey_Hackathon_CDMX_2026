@@ -1,6 +1,6 @@
 # Propuesta de Trabajo Colaborativo — NutriPey
 
-**Fecha:** 14 de noviembre de 2026
+**Fecha:** 15 de noviembre de 2026
 **Equipo:** dos personas, cada una con Claude Code, Codex y Antigravity.
 **Reglas para los agentes:** [AGENTS.md](../AGENTS.md). Este documento explica el acuerdo entre personas.
 
@@ -37,19 +37,19 @@ El trabajo se divide en vertical. Cada carril tiene carpetas propias y los agent
 
 | Carril | Qué construye | Dueña o dueño |
 | :--- | :--- | :--- |
-| **Pagos** | Ledger, integración con pey, webhook, conciliador, cola de WhatsApp, migraciones. | *Por asignar* |
-| **Campus** | POS, Web NFC, catálogo SEP, reglas del tutor, app del tutor, reportes. | *Por asignar* |
+| **Pagos** | Ledger, integración con pey, webhook, conciliador, cola de notificaciones, migraciones. | Responsable del issue; no hay dueño permanente. |
+| **Campus** | POS, Web NFC, catálogo SEP, reglas del tutor, app del tutor, reportes. | Responsable del issue; no hay dueño permanente. |
 
 Las rutas exactas están en [AGENTS.md](../AGENTS.md#carriles-y-rutas).
 
-**Sugerencia para asignar:** Pagos para quien tenga más experiencia en backend y bases de datos; Campus para quien tenga más experiencia en interfaz y vaya a hablar con la cooperativa piloto.
+Asignación inicial: `rslnt1270` implementa Pagos e infraestructura; `eri2905` coordina contratos, validación, notificaciones y luego Campus. Ambas personas pueden asumir tareas de cualquier carril; sus rutas se respetan por issue.
 
 ### 2.4 La frontera es un contrato escrito
 Campus necesita cobrar, y cobrar es del ledger. Para que nadie espere a nadie:
 
 1. El primer día se escribe `docs/contratos/ledger.md` con la firma de `cobrar`, `anular`, `acreditarRecarga` y `saldo`.
-2. Pagos entrega una versión simulada de esas funciones en el primer PR.
-3. Campus construye contra la simulación mientras Pagos implementa la real.
+2. Pagos usa fixtures y un contrato transaccional de reglas para validar el núcleo sin depender de pantallas Campus.
+3. Campus inicia implementación después del gate de Pagos (#12); las pruebas se repiten con catálogo y reglas reales antes de entrega. Un prototipo aislado no sustituye ese gate.
 
 Un cambio de contrato es un PR propio que aprueban las dos personas.
 
@@ -93,21 +93,21 @@ El repo todavía no tiene código. Si las dos personas generan el esqueleto al m
 
 | # | Tarea | Quién | Bloquea a |
 | :- | :--- | :--- | :--- |
-| 0 | Fusionar la documentación v1.1 y este acuerdo. | Una persona | Todo |
-| 1 | Cerrar la decisión D1 (stack) y D4 (registrar la CLABE en pey). | Las dos | 2 |
+| 0 | Revisar y fusionar la actualización v1.2 (PR #18); v1.1 ya fusionada. | Una persona | Todo |
+| 1 | Confirmar contrato; D1 ya decidido (Next.js + PostgreSQL). Verificar cuenta pey. | Las dos | 2 |
 | 2 | **PR de esqueleto:** proyecto, carpetas de los carriles, linter, pruebas, CI, `.env.example`. Una sola persona con un solo agente. | Pagos | 3 y 4 |
-| 3 | Contrato del ledger y versión simulada. | Pagos | Campus |
+| 3 | Contrato del ledger/reglas y validación de Pagos. | Pagos | Campus |
 | 4 | Proteger `main` y crear etiquetas e issues de la Fase 2 y 3. | Campus | — |
 
-A partir del paso 3 los dos carriles avanzan en paralelo.
+Después del gate #12 inicia Campus. Contratos, trámites y preparación de infraestructura sí pueden avanzar mientras se completa Pagos.
 
 ### Reparto por fase
 
 | Fase | Carril Pagos | Carril Campus |
 | :--- | :--- | :--- |
-| **2** (16–22 nov) | Esquema y ledger, `POST /codi/qr` y `/codi/pn`, webhook, conciliador. | Pantallas del tutor (alta, recarga, reglas) contra el ledger simulado. Catálogo SEP. |
-| **3** (23–30 nov) | `cobrar` y `anular` reales, pruebas de concurrencia, recarga en efectivo. | POS, Web NFC, fallbacks, grabado de tags. |
-| **4** (1–7 dic) | Cola de WhatsApp, límite mensual de cuenta, reporte de conciliación. | Reporte de cumplimiento SEP, pulido del POS, prueba en la cooperativa piloto. |
+| **2** (16–22 nov) | Esquema y ledger, `POST /codi/qr` y `/codi/pn`, webhook, conciliador. | Contrato de reglas, casos de aceptación y validación de Pagos; sin implementación Campus. |
+| **3** (23–30 nov) | Integración y correcciones sobre Pagos ya verificado. | POS, Web NFC, fallbacks, grabado de tags. |
+| **4** (1–7 dic) | Cola/n8n, recuperación, métricas y presupuesto AWS. | Reporte de cumplimiento SEP, pulido del POS, prueba en la cooperativa piloto. |
 | **5** (8–12 dic) | Despliegue y verificación. | Video y pitch. |
 
 ---
@@ -140,7 +140,7 @@ Los tres revisan y reportan; ninguno escribe código. Es deliberado: con dos per
 
 ## 7. Pendientes para cerrar este acuerdo
 
-- [ ] Asignar los carriles.
+- [x] Asignar responsables por issue; consultar el [plan](./superpowers/plans/2026-11-15-entrega-diciembre.md).
 - [ ] Proteger `main` en GitHub (PR obligatorio y una aprobación).
-- [ ] Decidir dónde se despliega `nutripey.y4ga.app`, para completar `deploy-check`.
-- [ ] Añadir `.github/CODEOWNERS` con los usuarios de GitHub de cada carril.
+- [ ] Completar región, tamaño, presupuesto y separación de PostgreSQL en AWS; EC2 es la propuesta inicial del PR #18.
+- [ ] Añadir `.github/CODEOWNERS` con revisores acordados, sin imponer propiedad permanente de carriles.

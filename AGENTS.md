@@ -19,13 +19,15 @@ Software de cobro sin efectivo para cooperativas escolares: recarga por CoDi (AP
 
 ## Carriles y rutas
 
-La estructura es la propuesta para la decisión D1 (monolito Next.js con PostgreSQL). Si D1 cambia, se actualiza esta tabla en un PR propio.
+D1: monolito Next.js con PostgreSQL, decidido el 15 noviembre. Los carriles delimitan rutas, no personas: el responsable se asigna por issue. Pagos se valida antes de implementar Campus; ver docs/08_spec_entrega_diciembre.md.
 
 | Carril | Rutas | Contenido |
 | :--- | :--- | :--- |
-| **Pagos** | `src/server/ledger/`, `src/server/pey/`, `src/server/notificaciones/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, outbox, migraciones. |
+| **Pagos** | `src/server/ledger/`, `src/server/pey/`, `src/server/notificaciones/`, `app/api/interno/notificaciones/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, outbox, migraciones. |
 | **Campus** | `app/(pos)/`, `app/(tutor)/`, `app/(escuela)/`, `app/api/pos/`, `src/server/reglas/`, `src/server/catalogo/`, `src/lib/nfc/` | POS, Web NFC, catálogo SEP, reglas del tutor, reportes, UI. |
-| **Compartido** | `package.json`, lockfile, `db/migrations/`, `src/server/ledger/index.ts`, `docs/contratos/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/` | Solo se cambia en un PR dedicado, pequeño, que se fusiona antes que el resto. |
+| **Compartido** | `Dockerfile`, `.dockerignore`, `compose*.yaml`, `package.json`, lockfile, `db/migrations/`, `src/server/ledger/index.ts`, `docs/contratos/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/` | Solo se cambia en un PR dedicado, pequeño, que se fusiona antes que el resto. |
+
+`README.md` y `docs/` (salvo contratos) pueden actualizarse en el PR funcional del issue. `infrastructure/` y `automation/` pertenecen a tareas de infraestructura/automatización con rutas explícitas y PR dedicado; se fusionan antes de sus dependientes, no antes de todo el proyecto. #13 separa backend Pagos del workflow en `automation/n8n/`; #11/#22/#23/#30 usan sus rutas de infraestructura.
 
 **Frontera entre carriles:** Campus nunca escribe SQL sobre tablas del ledger. Llama a las funciones que Pagos exporta desde `src/server/ledger/index.ts` (`cobrar`, `anular`, `acreditarRecarga`, `saldo`). La firma de esas funciones se acuerda en `docs/contratos/` antes de implementarlas.
 

@@ -5,7 +5,7 @@ description: Lista de verificación para desplegar NutriPey y prueba de humo pos
 
 # Despliegue de NutriPey
 
-> **Pendiente:** el proveedor de hospedaje de `nutripey.y4ga.app` no está decidido. Los comandos concretos se añaden aquí cuando se cierre. La lista aplica a cualquier proveedor.
+> **Decidido:** AWS. **Propuesta para aprobación del PR #18:** Docker y EC2 inicial. Pendientes: región, recursos, presupuesto y destino de PostgreSQL. Añadir comandos reproducibles al implementar; no implica que exista un despliegue.
 
 Desplegar a producción es una acción visible y difícil de revertir. Pide confirmación a la persona antes de ejecutar el despliegue; esta guía no la sustituye.
 
@@ -19,7 +19,7 @@ Desplegar a producción es una acción visible y difícil de revertir. Pide conf
   - `PEY_API_KEY` (la de producción, distinta de la de desarrollo)
   - `PEY_WEBHOOK_SECRET`
   - `PEY_BANK_ACCOUNT_ID` de la cooperativa de la demo
-  - Credenciales del proveedor de WhatsApp
+  - Credenciales del canal elegido (Telegram o WhatsApp) y n8n
   - Secreto de sesión
 - [ ] La cuenta bancaria está en `codiStatus: ACTIVE` (`GET /bank-account/{id}`).
 - [ ] La base de datos y el cómputo están en la misma región. El objetivo en caja es p95 ≤ 800 ms.
@@ -40,7 +40,7 @@ En este orden. Si un paso falla, se detiene y se reporta.
 4. **Recarga real de $0.01:** crear la recarga, pagar desde una app bancaria y confirmar:
    - el saldo sube exactamente 1 centavo,
    - existe un `WEBHOOK_EVENTO` con resultado `ACREDITADO`,
-   - llegó el aviso por WhatsApp.
+   - llegó el aviso por el canal elegido.
 5. **Cobro:** un cobro de prueba contra el alumno de demostración se aprueba; repetirlo con la misma llave de idempotencia no cobra dos veces.
 6. **Rechazo:** un producto con alérgeno bloqueado devuelve 422 `PRODUCTO_BLOQUEADO`.
 7. **Latencia:** 20 cobros seguidos; anotar el p95.

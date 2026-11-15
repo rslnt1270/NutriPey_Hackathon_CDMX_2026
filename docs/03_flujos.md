@@ -1,6 +1,6 @@
 # Diagramas de Flujo y Secuencia — NutriPey
 
-**Versión:** 1.1  
+**Versión:** 1.2<br>
 **Flujos:** recarga CoDi vía pey, conciliación, cobro en caja y ciclo de vida de la credencial.  
 **Cambios respecto a 1.0:** ver [Auditoría y Decisiones](./05_auditoria_y_decisiones.md).
 
@@ -62,13 +62,13 @@ sequenceDiagram
         NutriAPI-->>PeyAPI: 200
     end
 
-    Cola-)Padre: WhatsApp: recarga acreditada de 100.00 MXN
+    Cola-)Padre: Canal elegido: recarga acreditada de 100.00 MXN
     NutriApp-->>Padre: La consulta de estado muestra el nuevo saldo
 ```
 
 **Puntos de diseño**
 
-- Se responde a pey después de confirmar en base de datos y antes de contactar a WhatsApp.
+- Se responde a pey después de confirmar en base de datos y antes de contactar al canal de mensajería.
 - La correlación es por `codiQrId` en QR y por `transactionId` en push. `numRef` no se usa como llave: solo admite 7 dígitos.
 - Se acredita el monto que reporta pey, no el que pidió el cliente.
 
@@ -140,10 +140,11 @@ sequenceDiagram
             Backend-->>POS: 422 CREDENCIAL_INVALIDA
             POS-->>Cajero: Pantalla roja: credencial no válida
         else Producto bloqueado por regla del tutor
-            Backend->>DB: ROLLBACK y registro en auditoría
+            Backend->>DB: ROLLBACK del intento de cobro
+            Backend->>DB: BEGIN separado, auditoría y outbox de rechazo, COMMIT
             Backend-->>POS: 422 PRODUCTO_BLOQUEADO
             POS-->>Cajero: Pantalla roja: indica qué producto retirar
-            Backend-)Cola: Aviso inmediato al tutor
+            Cola->>DB: Reclama aviso de rechazo confirmado
         else Tope diario o saldo insuficiente
             Backend->>DB: ROLLBACK
             Backend-->>POS: 422 TOPE_DIARIO o SALDO_INSUFICIENTE
@@ -190,3 +191,29 @@ stateDiagram-v2
     ACTIVA --> BAJA : Reposición o egreso del alumno
     BAJA --> [*] : El saldo sigue en la cuenta del alumno
 ```
+
+## 5. Notificación posterior al commit (diseño v1.2)
+
+```mermaid
+sequenceDiagram
+    participant DB as PostgreSQL
+    participant API as API interna autenticada
+    participant N as n8n
+    participant P as Telegram o WhatsApp
+    Note over DB: Movimiento y outbox, o auditoría y outbox de rechazo, confirmados
+    N->>API: Reclamar lote pendiente
+    API->>DB: Reservar eventos con lease e intentos
+    DB-->>API: eventId y destinatario autorizado
+    API-->>N: Lote mínimo
+    N->>P: Enviar aviso
+    alt Proveedor acepta mensaje
+        P-->>N: Identificador de mensaje
+        N->>API: Confirmar aceptación del proveedor
+        API->>DB: Guardar estado e identificador
+    else Fallo o timeout
+        N->>API: Registrar fallo cuando sea posible
+        Note over DB,N: Al vencer lease, reintentar con backoff y límite
+    end
+```
+
+Aceptar el webhook o mensaje no prueba entrega al teléfono. Un timeout después del envío puede duplicar avisos; deduplicar por evento/destinatario y registrar resultado incierto. Un fallo de n8n no revierte pagos. Desarrollo usa n8n local; diciembre requiere operación continua. Contrato y migración del outbox se detallan en #4 y #13.

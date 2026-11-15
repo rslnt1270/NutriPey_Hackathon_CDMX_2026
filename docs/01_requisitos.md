@@ -1,7 +1,7 @@
 # Especificación de Requerimientos del Sistema (SRS) — NutriPey
 
-**Versión:** 1.1  
-**Fecha:** 14 de noviembre de 2026  
+**Versión:** 1.2<br>
+**Fecha:** 15 de noviembre de 2026<br>
 **Proyecto:** NutriPey (Ecosistema Escolar de Pagos Digitales CoDi)  
 **Cambios respecto a 1.0:** ver [Auditoría y Decisiones](./05_auditoria_y_decisiones.md).
 
@@ -22,11 +22,13 @@ NutriPey habilita:
 
 ---
 
+La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre permite simulaciones rotuladas y no demuestra cumplimiento del producto. Alcances y aceptación en la [spec](./08_spec_entrega_diciembre.md).
+
 ## 2. Actores del Sistema
 
 | Actor | Descripción |
 | :--- | :--- |
-| **Tutor** | Titular de la cuenta bancaria desde la que se recarga. Configura reglas y recibe avisos por WhatsApp. Un alumno puede tener varios tutores. |
+| **Tutor** | Titular de la cuenta bancaria desde la que se recarga. Configura reglas y recibe avisos por Telegram o WhatsApp. Un alumno puede tener varios tutores. |
 | **Estudiante** | Porta una credencial: pulsera o tarjeta NFC, o carnet con QR. No necesita celular. |
 | **Cajero** | Personal de la cooperativa. Usa la PWA de punto de venta con sesión propia. |
 | **Administrador de cooperativa** | Gestiona catálogo, cajeros y conciliación. Titular de la cuenta bancaria receptora. |
@@ -78,17 +80,20 @@ NutriPey habilita:
 - **RF-17 (Reglas del tutor):** por alumno, el tutor define alérgenos prohibidos, categorías bloqueadas y tope diario.
 - **RF-18 (Reporte de cumplimiento):** la escuela descarga un reporte mensual agregado: productos vendidos por categoría, proporción de pagos digitales y número de bloqueos por alérgeno. Sin datos por alumno.
 
-### 3.4 Notificaciones por WhatsApp
+### 3.4 Notificaciones por canal autorizado
 
 - **RF-19 (Avisos inmediatos):** recarga acreditada, compra bloqueada por regla del tutor y saldo por debajo de un umbral.
 - **RF-20 (Resumen diario):** un mensaje al final de la jornada con las compras del día y el saldo. El tutor puede cambiarlo a ticket por compra o desactivarlo.
-- **RF-21 (Envío desacoplado):** los mensajes salen de una cola con reintentos. Una falla del proveedor no afecta cobros ni webhooks.
+- **RF-21 (Envío desacoplado):** los mensajes salen del outbox persistente mediante n8n, con reintentos acotados y estado por evento/destinatario. Una falla del proveedor no afecta cobros ni webhooks; recibir el evento no significa entregar el mensaje.
 
 ### 3.5 Consentimiento
 
 - **RF-22 (Alta con consentimiento):** el alta de un alumno exige la aceptación del aviso de privacidad por el tutor, con consentimiento expreso y separado para datos de alergias y, si aplica, para la foto.
 
----
+### 3.6 Mensajería e informes asistidos
+
+- **RF-23 (Vinculación de mensajería):** verificar destinatario, consentimiento y relación tutor/alumno antes de habilitar Telegram o WhatsApp; permitir revocación. Un canal operativo es suficiente para la entrega.
+- **RF-24 (Resumen asistido, opcional):** Bedrock podrá redactar reportes agregados ya calculados; nunca decidir saldo, cobro, alergias o cumplimiento. Con fallo se conserva el reporte numérico. Requiere decisión de adopción y evaluación independiente.
 
 ## 4. Requerimientos No Funcionales (RNF)
 
@@ -100,7 +105,11 @@ NutriPey habilita:
 - **RNF-06 (Trazabilidad):** cada cobro, anulación, recarga en efectivo y cambio de reglas registra quién lo hizo y cuándo.
 - **RNF-07 (Pruebas de pagos):** pey no tiene sandbox. La integración se prueba en producción con montos de $0.01 MXN.
 
----
+- **RNF-08 (Reproducibilidad):** imágenes Docker versionadas, arranque documentado, healthcheck, migraciones explícitas y PostgreSQL persistente sin puerto público.
+- **RNF-09 (Recuperación):** respaldos cifrados y restauración ensayada en entorno aislado; registrar RPO/RTO medidos y objetivos acordados antes del 7 diciembre.
+- **RNF-10 (Operación):** métricas de latencia, errores, conciliación y edad del outbox sin datos personales; un aviso fallido no bloquea caja.
+- **RNF-11 (Costo y acceso):** verificar elegibilidad/vigencia de créditos, región, presupuesto y alertas; IAM mínimo y secretos fuera de imágenes/repositorio. Las alertas no cortan el gasto.
+- **RNF-12 (Escalabilidad):** medir p95 con carga y recursos documentados; Docker no implica alta disponibilidad. Adoptar servicios adicionales solo con prueba, costo y decisión registrados.
 
 ## 5. Reglas de Negocio (RN)
 

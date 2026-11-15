@@ -3,7 +3,7 @@
 Cobro sin efectivo para cooperativas escolares, con recarga por CoDi y cumplimiento de la norma de alimentación saludable.
 
 > Proyecto del **Hackatón México 2026** (AI Builders México, SpaceXAI Ambassadors, pey, SEDECO CDMX y Cursor).
-> Estado: **especificación**. El código de aplicación aún no existe. Punto de retoma: [docs/07_estado_y_siguientes_pasos.md](./docs/07_estado_y_siguientes_pasos.md).
+> Estado: **especificación**. El código de aplicación aún no existe. Entrega principal: **12 de diciembre de 2026**; el kickoff del 15 de noviembre es un prototipo previo. Punto de retoma: [docs/07_estado_y_siguientes_pasos.md](./docs/07_estado_y_siguientes_pasos.md).
 
 ## Resumen
 
@@ -19,7 +19,7 @@ NutriPey atiende tres problemas:
 
 ## Arquitectura
 
-Circuito abierto para recargar, circuito cerrado para cobrar en la escuela.
+Circuito abierto para recargar, circuito cerrado para cobrar en la escuela. Decididos: monolito modular Next.js + PostgreSQL y AWS. Propuesta del PR #18: Docker y despliegue inicial en EC2. n8n orquesta avisos fuera de la transacción. Lambda/SQS y Bedrock son evaluaciones opcionales, no servicios implementados.
 
 ```mermaid
 flowchart TD
@@ -55,8 +55,10 @@ flowchart TD
     end
 
     subgraph Notificaciones ["Canal con el tutor"]
-        WhatsApp["WhatsApp (recarga, bloqueo, saldo bajo, resumen diario)"]
-        Outbox -.-> WhatsApp
+        N8N["n8n: envío y reintentos"]
+        WhatsApp["Telegram o WhatsApp: canal por confirmar"]
+        Outbox -.-> N8N
+        N8N -.-> WhatsApp
         WhatsApp -.-> Padre
     end
 ```
@@ -85,6 +87,8 @@ Las cifras regulatorias deben confirmarse en el DOF antes de presentarse. Fuente
 | 05 | [Auditoría y decisiones](./docs/05_auditoria_y_decisiones.md) | Hallazgos sobre la v1.0, razones de cada cambio y decisiones abiertas. |
 | 06 | [Trabajo colaborativo](./docs/06_trabajo_colaborativo.md) | Carriles, ramas y papel de cada herramienta de IA. |
 | 07 | [Estado y siguientes pasos](./docs/07_estado_y_siguientes_pasos.md) | Punto de retoma y tareas en orden. |
+| 08 | [Spec de entrega](./docs/08_spec_entrega_diciembre.md) | Alcances, arquitectura, criterios de aceptación y decisiones. |
+| Plan | [Plan de ejecución](./docs/superpowers/plans/2026-11-15-entrega-diciembre.md) | Tareas, rutas, dependencias, responsables y verificaciones. |
 | — | [Contrato del ledger](./docs/contratos/ledger.md) | Frontera entre los carriles Pagos y Campus (borrador). |
 | — | [Análisis](./analisis/README.md) | Datos de la SEP y ENSANUT con gráficas en R. |
 
@@ -100,7 +104,7 @@ Las cifras regulatorias deben confirmarse en el DOF antes de presentarse. Fuente
 │   └── agents/            Subagentes revisores (solo lectura)
 ├── .github/               Plantillas de PR e issue, CI
 ├── analisis/              Datos y gráficas en R (proyecto de RStudio)
-├── docs/                  Especificación y planificación (01 a 07)
+├── docs/                  especificación y planificación
 │   └── contratos/         Interfaces acordadas entre carriles
 └── scripts/               Verificación de enlaces y alta de issues
 ```
@@ -113,10 +117,10 @@ Lee [CONTRIBUTING.md](./CONTRIBUTING.md). En resumen: un issue, una rama, un PR,
 
 | Fase | Periodo | Entregables |
 | :--- | :--- | :--- |
-| 1. Validación y especificación | 14 – 15 nov | Repositorio, arquitectura y especificación. Arrancan los trámites: CLABE en pey, WhatsApp y tags NFC. |
-| 2. Motor de pagos CoDi | 16 – 22 nov | CoDi QR y push, webhook verificado, ledger y conciliador. Pruebas con $0.01 (pey no tiene sandbox). |
-| 3. POS y NFC | 23 – 30 nov | PWA con Web NFC, cobro idempotente, catálogo SEP y reglas del tutor. |
-| 4. Notificaciones y endurecimiento | 1 – 7 dic | Cola de WhatsApp, pruebas de concurrencia, anulaciones y reporte de cumplimiento. |
-| 5. Demo final | 8 – 12 dic | Video de 3 minutos, despliegue en `nutripey.y4ga.app` y defensa ante el jurado. |
+| 1. Validación y especificación | 14 – 15 nov | Prototipo kickoff separado del producto; contrato, Docker y trámites pey/canal/NFC. |
+| 2. Motor de pagos CoDi | 16 – 22 nov | Núcleo Pagos: CoDi, ledger, cobro, reverso y conciliador; concurrencia e idempotencia con PostgreSQL. Pruebas pey de $0.01. |
+| 3. POS y NFC | 23 – 30 nov | Tras validar Pagos: POS, tutor, Web NFC, catálogo, reglas reales y reportes. |
+| 4. Notificaciones y endurecimiento | 1 – 7 dic | AWS, notificaciones n8n, respaldo/restauración, carga y presupuesto; evaluar Lambda/Bedrock. |
+| 5. Demo final | 8 – 12 dic | Estabilización desde el 8, demo real y video de respaldo; confirmar formato y hora final del evento. |
 
 Fuera del MVP: operación offline, varias cuentas receptoras por escuela y reembolso automático de saldo.
