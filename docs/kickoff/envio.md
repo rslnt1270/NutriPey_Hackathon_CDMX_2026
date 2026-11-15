@@ -15,7 +15,7 @@ El objetivo de hoy es comunicar y evaluar ese recorrido. La implementación prod
 ## Qué está simulado y qué es real
 
 Fuente de capacidades: [descripción del PR #31](https://github.com/rslnt1270/NutriPey_Hackathon_CDMX_2026/pull/31), consultada el 15 noviembre con HEAD `2b108046b8b901ff34fb99b092df8c4218c8a518`.
-Esta tabla no sustituye la revisión cruzada del SHA congelado ni las pruebas de la URL final.
+El nombre «Avisos (simulado)» fue confirmado por la sesión de demo para su commit local `5cf1ff33785c20ee2ece63735de05d9eac1243ff`, pendiente de publicación y revisión independiente. Esta tabla no sustituye la revisión cruzada del SHA congelado ni las pruebas de la URL final.
 
 | Elemento | Qué existe en el prototipo | Límite que debe explicarse |
 | :--- | :--- | :--- |
@@ -23,7 +23,7 @@ Esta tabla no sustituye la revisión cruzada del SHA congelado ni las pruebas de
 | Recarga | QR de ejemplo y acción que simula la confirmación; control de duplicados. | QR no pagable; no llama a pey ni mueve dinero. |
 | Caja | Catálogo y cobro con tap simulado; restricciones y repetición de llave. | No se lee una pulsera física; no prueba concurrencia en PostgreSQL. |
 | Reglas | Simulación de restricciones de productos, alérgenos, tope y suspensión. | Datos ficticios; no demuestra cumplimiento normativo certificado. |
-| Avisos | Vista denominada «WhatsApp» con mensajes de ejemplo. | No envía mensajes; el canal real sigue por decidir entre Telegram y WhatsApp. |
+| Avisos | Vista denominada «Avisos (simulado)» con mensajes de ejemplo (cambio reportado por la sesión de demo). | No envía mensajes; el canal real sigue por decidir entre Telegram y WhatsApp. |
 | Ledger | Código de simulación con centavos enteros, doble partida y reversos. | No es el ledger real ni implementa todavía su contrato de backend. |
 | Pruebas | El PR reporta 12/12 pruebas de `demo/pruebas.js`. | Resultado del autor; Codex lo reproducirá sobre el SHA congelado. |
 | Publicación | Vista previa en GitHub Pages. | La sesión de demo publica; URL y contenido final pendientes de validación tras congelar. |
@@ -46,7 +46,7 @@ Grabar solo la demo con datos ficticios, sin cuentas personales, pestañas priva
 | 0:00–0:20 | Portada o vista inicial. | «NutriPey propone cobro sin efectivo para cooperativas escolares. Hoy mostramos un prototipo: los pagos, el NFC y los avisos son simulados». Mantener visible la advertencia de simulación. |
 | 0:20–0:55 | Tutor: mostrar QR de ejemplo y activar la simulación de pago. | «En el producto previsto, CoDi liquidaría a la cooperativa. Este QR no se puede pagar». Mostrar saldo antes y después; explicar que la referencia repetida no debe acreditar dos veces. |
 | 0:55–1:35 | Caja: seleccionar producto permitido, simular tap y repetir la misma llave con el control previsto. | «La compra descuenta saldo; repetir esta operación con la misma llave no debe cobrar de nuevo». Mostrar el saldo estable en el reintento. Preparar un rechazo por una regla ficticia y mostrar el motivo sin afirmar que hubo cobro. |
-| 1:35–2:00 | Avisos: abrir la pestaña «WhatsApp», si conserva ese nombre. | «Estos mensajes se muestran dentro del prototipo, no se envían a un teléfono. El canal real será Telegram o WhatsApp, aún por confirmar». Mostrar aviso de recarga o compra bloqueada. |
+| 1:35–2:00 | Avisos: abrir la pestaña «Avisos (simulado)». | «Estos mensajes se muestran dentro del prototipo, no se envían a un teléfono. El canal real será Telegram o WhatsApp, aún por confirmar». Mostrar aviso de recarga o compra bloqueada. |
 | 2:00–2:30 | Ledger: mostrar movimientos de recarga y compra. | «Este ledger de demostración representa importes en centavos y asientos de doble partida. El reintento no agrega otro cobro. Una corrección se representaría con un reverso, sin editar el asiento original». No afirmar persistencia o seguridad productiva. |
 | 2:30–2:45 | Cierre con enlace público. | «El siguiente paso es implementar y verificar los pagos reales antes de integrar Campus. Esta demo recoge el flujo que queremos validar para la entrega del 12 de diciembre». |
 
@@ -61,7 +61,7 @@ Video: pendiente de grabación y enlace público. Es opcional; no retrasar el en
 | Ciudad | Sí | pendiente — confirmar por canal privado y seleccionar en el formulario. |
 | Nombre del equipo | Sí | pendiente — confirmar por canal privado; no asumir que coincide con la marca del proyecto. |
 | Descripción del proyecto | Sí | Copiar los tres párrafos de «Descripción para el formulario», ajustados a la versión realmente publicada. |
-| Repositorio de código público (URL) | Sí | https://github.com/rslnt1270/NutriPey_Hackathon_CDMX_2026 — la demo se desarrolla en el PR #31 hacia `integracion/demo-kickoff`; no asumir que está en `main`. |
+| Repositorio de código público (URL) | Sí | https://github.com/rslnt1270/NutriPey_Hackathon_CDMX_2026/tree/integracion/demo-kickoff/demo — enlace preparado para el envío; usar solo después de fusionar #31 con aprobación humana y confirmar que muestra el código. Mientras tanto, el código está en la rama del PR #31, no en `main`. |
 | Link de la app en vivo (preferido) | No | https://rslnt1270.github.io/NutriPey_Hackathon_CDMX_2026/ — validar la publicación final antes de pegar. |
 | Video demo (opcional) | No | pendiente — enlace de acceso público, si se graba. |
 | Correos de los integrantes del equipo | Sí | pendiente — introducir uno por línea directamente en el formulario, usando los del registro Luma. Nunca guardarlos en este archivo ni en GitHub. |
@@ -74,7 +74,7 @@ Video: pendiente de grabación y enlace público. Es opcional; no retrasar el en
 - [ ] Confirmar con la sesión de demo qué SHA publicó en `gh-pages`; solo esa sesión edita y publica.
 - [ ] Antes de 12:00: abrir la URL en vivo sin autenticación, recorrer tutor → caja → aviso → ledger y comprobar escritorio y 390 px.
 - [ ] Confirmar que los avisos y pagos siguen rotulados como simulados y no aparecen datos personales.
-- [ ] Confirmar accesibilidad del repo y, si existe, del video desde una ventana sin sesión.
+- [ ] M1: confirmar que #31 está fusionado en `integracion/demo-kickoff` y que el enlace al código indicado en el formulario abre `demo/` desde una ventana sin sesión; comprobar también el video, si existe.
 - [ ] Una persona completa los datos privados, revisa los ocho campos y envía antes de 12:30.
 - [ ] Esa persona conserva la confirmación de envío en privado. No marcar entregado antes de obtenerla.
 
