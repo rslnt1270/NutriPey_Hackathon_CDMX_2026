@@ -33,7 +33,7 @@ Esta tabla no sustituye la revisión cruzada del SHA congelado ni las pruebas de
 
 En este kickoff no conectamos la demo a la API de pey ni realizamos pagos reales; por ello no podemos evaluar su funcionamiento operativo, disponibilidad o tiempos de respuesta. Nuestro trabajo hasta ahora fue de diseño y revisión documental. La documentación interna registra cómo crear cobros CoDi, correlacionar confirmaciones, verificar el cuerpo crudo del webhook y evitar acreditaciones duplicadas.
 
-Como siguiente paso planeamos validar la integración con una cuenta habilitada y pruebas controladas de $0.01 MXN, conforme a la guía del proyecto, que indica que no hay sandbox. Como sugerencia desde esta etapa documental, sería útil disponer de ejemplos completos de reintentos y conciliación de extremo a extremo. Esto es una propuesta, no un fallo observado durante uso real.
+Según la guía del proyecto, pey no dispone de sandbox: las pruebas deben hacerse en producción con $0.01 MXN y el dinero enviado a la cuenta de prueba no se devuelve. Esto limita la experimentación sin mover dinero real; un entorno de pruebas sería útil. Como siguiente paso planeamos validar la integración con una cuenta habilitada y esos montos controlados. También serían útiles ejemplos completos de reintentos y conciliación de extremo a extremo. Son sugerencias desde la revisión documental, no fallos observados durante uso real.
 
 Fuentes internas: [auditoría de la API](../05_auditoria_y_decisiones.md#c2-contrato-real-de-la-api-de-pey) y [guía pey-codi](../../.claude/skills/pey-codi/SKILL.md). No usar la secuencia histórica de pagos reales sugerida en el pitch de la auditoría para describir esta demo simulada.
 
