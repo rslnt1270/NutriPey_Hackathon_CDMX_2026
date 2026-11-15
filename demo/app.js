@@ -20,7 +20,7 @@ function iniciar() {
   $("p-pulsera").innerHTML = Object.values(st.alumnos).map((a) => `<option value="${a.pulsera}">${a.pulsera} (${a.iniciales})</option>`).join("")
     + `<option value="tag-0000">tag-0000 (no registrada)</option>`;
   pintarMontos(); pintarReglas(); pintarCatalogo(); pintarCarrito(); pintarLedger();
-  whatsapp("Hola 👋 Este es el canal de avisos de NutriPey (simulado).");
+  aviso("Hola 👋 Aquí llegan los avisos de NutriPey. Canal por confirmar: Telegram o WhatsApp.");
 }
 
 const alumnoTutor = () => $("t-alumno").value;
@@ -59,10 +59,10 @@ function pintarLedger() {
   pintarReglas();
 }
 
-function whatsapp(texto) {
+function aviso(texto) {
   const b = document.createElement("div");
   b.className = "burbuja";
-  b.innerHTML = `${texto}<time>${hora(Date.now())}</time>`;
+  b.innerHTML = `${texto}<time>${hora(Date.now())} · aviso simulado</time>`;
   $("w-chat").prepend(b);
 }
 
@@ -84,7 +84,7 @@ $("t-alumno").addEventListener("change", pintarReglas);
 $("t-bloqueo").addEventListener("change", (e) => {
   const a = st.alumnos[alumnoTutor()];
   a.bloqueada = e.target.checked;
-  whatsapp(a.bloqueada ? `🔒 Pulsera de ${a.iniciales} suspendida. Se aplica desde el siguiente tap.` : `🔓 Pulsera de ${a.iniciales} reactivada.`);
+  aviso(a.bloqueada ? `🔒 Pulsera de ${a.iniciales} suspendida. Se aplica desde el siguiente tap.` : `🔓 Pulsera de ${a.iniciales} reactivada.`);
 });
 
 $("t-generar").addEventListener("click", () => {
@@ -93,7 +93,7 @@ $("t-generar").addEventListener("click", () => {
   $("t-ref").textContent = recargaPendiente.referencia;
   $("t-qr").classList.remove("oculto");
   $("t-pagar").disabled = false;
-  $("t-estado").textContent = `Esperando pago de ${mxn(monto)}…`;
+  $("t-estado").textContent = `Esperando pago simulado de ${mxn(monto)}…`;
 });
 
 $("t-pagar").addEventListener("click", () => {
@@ -104,9 +104,9 @@ $("t-pagar").addEventListener("click", () => {
   setTimeout(() => {
     L.acreditarRecarga(st, { ...rec, ahora: Date.now() });
     const a = st.alumnos[rec.alumnoId];
-    $("t-estado").textContent = `✅ Recarga acreditada: ${mxn(rec.centavos)}`;
+    $("t-estado").textContent = `✅ Recarga acreditada: ${mxn(rec.centavos)} (pago simulado)`;
     $("t-qr").classList.add("oculto");
-    whatsapp(`💚 Recarga de ${mxn(rec.centavos)} acreditada para ${a.iniciales}. Saldo: ${mxn(L.saldo(st, rec.alumnoId))}.`);
+    aviso(`💚 Recarga de ${mxn(rec.centavos)} acreditada para ${a.iniciales}. Saldo: ${mxn(L.saldo(st, rec.alumnoId))}.`);
     pintarLedger();
   }, 1200);
 });
@@ -122,7 +122,7 @@ function mostrarResultado(r) {
   const box = $("p-resultado");
   box.className = "resultado " + (r.ok ? "ok" : "bad");
   box.innerHTML = r.ok
-    ? `<div class="ini">${a.iniciales}</div>${a.grupo} · Cobrado ${mxn(r.total)} · Saldo ${mxn(L.saldo(st, r.alumnoId))}${r.repetido ? "<p><b>Misma llave: se devolvió el resultado original, no se cobró otra vez.</b></p>" : ""}`
+    ? `<div class="ini">${a.iniciales}</div>${a.grupo} · Cobro simulado ${mxn(r.total)} · Saldo ${mxn(L.saldo(st, r.alumnoId))}${r.repetido ? "<p><b>Misma llave: se devolvió el resultado original, no se cobró otra vez.</b></p>" : ""}`
     : `<div class="ini">✕</div>${a ? a.iniciales + " · " : ""}${r.motivo}${r.repetido ? "<p><b>Misma llave: resultado original.</b></p>" : ""}`;
 }
 
@@ -136,8 +136,8 @@ $("p-cobrar").addEventListener("click", () => {
   $("p-anular").classList.toggle("oculto", !r.ok);
   if (r.ok) { carrito = {}; pintarCarrito(); }
   const a = r.alumnoId && st.alumnos[r.alumnoId];
-  if (r.regla === "alergeno" || r.regla === "tope") whatsapp(`⚠️ Compra bloqueada para ${a.iniciales}: ${r.motivo}.`);
-  if (r.ok && L.saldo(st, r.alumnoId) < 2000) whatsapp(`🔔 Saldo bajo de ${a.iniciales}: ${mxn(L.saldo(st, r.alumnoId))}.`);
+  if (r.regla === "alergeno" || r.regla === "tope") aviso(`⚠️ Compra bloqueada para ${a.iniciales}: ${r.motivo}.`);
+  if (r.ok && L.saldo(st, r.alumnoId) < 2000) aviso(`🔔 Saldo bajo de ${a.iniciales}: ${mxn(L.saldo(st, r.alumnoId))}.`);
   pintarLedger();
 });
 
@@ -151,7 +151,7 @@ $("p-anular").addEventListener("click", () => {
   const r = L.anular(st, { cobro: ultimoCobro.llave, ahora: Date.now() });
   const box = $("p-resultado");
   box.className = "resultado " + (r.ok ? "ok" : "bad");
-  box.innerHTML = r.ok ? `<div class="ini">↺</div>Cobro anulado con reverso. Se devolvieron ${mxn(r.total)} al anticipo.` : r.motivo;
+  box.innerHTML = r.ok ? `<div class="ini">↺</div>Cobro simulado anulado con reverso. Se devolvieron ${mxn(r.total)} al anticipo.` : r.motivo;
   $("p-anular").classList.add("oculto");
   pintarLedger();
 });
