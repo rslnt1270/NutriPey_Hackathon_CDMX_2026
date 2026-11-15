@@ -135,3 +135,7 @@ Detalle en [05_auditoria_y_decisiones.md](./05_auditoria_y_decisiones.md#6-decis
 - **Regulatorio:** confirmar en el DOF las cifras de N2Bis y la Ley de Economía Digital antes del pitch.
 - **Marca:** "NutriPey" usa la marca de un patrocinador.
 - **Modelo de negocio:** falta definir quién paga.
+
+## Avance tras el kickoff — 15 noviembre
+
+El usuario confirmó el envío del formulario; #15 quedó cerrado y la demo permanece en https://nutripey.y4ga.app/ con HTTPS. Los seguimientos no bloqueantes son #34–#36. El PR #37 de #3 prepara la base Next.js, tipos, lint, humo HTTP y PostgreSQL real; aprobación y fusión se verifican en GitHub. La guía está en [desarrollo/base.md](./desarrollo/base.md). No hay pagos ni Campus implementados. Contratos #4/#28 y protección #2 siguen asignados a eri2905; #19 depende de integrar la base.
