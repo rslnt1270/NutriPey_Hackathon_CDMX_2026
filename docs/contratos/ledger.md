@@ -2,7 +2,7 @@
 
 **Estado:** borrador. Lo aprueban las dos personas antes de implementar.
 **Dueño:** carril Pagos. **Consumidor:** carril Campus.
-**Ubicación del código:** `src/server/ledger/index.ts` (sujeto a la decisión D1).
+**Ubicación del código:** `src/server/ledger/index.ts` (Next.js + PostgreSQL decidido).
 
 Campus nunca escribe SQL sobre tablas del ledger. Usa únicamente estas funciones. Cambiar una firma requiere un PR propio a este archivo.
 
@@ -110,7 +110,7 @@ function saldo(estudianteId: string): Promise<{
 
 ## Versión simulada
 
-El primer PR del carril Pagos entrega estas cuatro funciones con datos en memoria y las mismas firmas, para que Campus construya sin esperar. La simulación debe poder producir cada `MotivoRechazo`, por ejemplo según el token de la credencial.
+Los fixtures permiten probar cada `MotivoRechazo` y preparar el prototipo. La implementación Campus espera el gate #12 de Pagos; luego debe verificarse con reglas reales dentro de la misma transacción. El contrato de esa integración se acuerda antes de implementar `cobrar`. No se permite activar fixtures en producción.
 
 ## Preguntas abiertas
 

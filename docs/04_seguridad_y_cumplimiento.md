@@ -34,7 +34,7 @@ Marco aplicable: *Ley General de los Derechos de Niñas, Niños y Adolescentes* 
 1. **Consentimiento antes del alta.** El tutor acepta el aviso de privacidad, con consentimiento expreso para datos de salud. Se registra la versión del aviso y la fecha. Puede revocarlo.
 2. **Chip sin datos personales.** La credencial contiene únicamente un token aleatorio. No guarda nombre, saldo, alergias ni foto.
 3. **Minimización en caja.** El cajero ve qué producto retirar, nunca el motivo médico.
-4. **Minimización en WhatsApp.** Los mensajes pasan por un tercero (Meta o Twilio), declarado como encargado en el aviso de privacidad. Usan el nombre de pila y no incluyen alergias.
+4. **Minimización en mensajería.** Identificar en el aviso a los proveedores elegidos (Telegram o WhatsApp y alojamiento n8n). Verificar consentimiento y destinatario; omitir nombres y alergias del menor. Configurar retención de ejecuciones y evitar payloads personales en logs.
 5. **Reportes agregados.** La dirección escolar y SEDECO reciben totales por categoría y periodo, con un mínimo de alumnos por grupo para evitar la reidentificación.
 6. **Retención.** Al egresar el alumno se eliminan foto, reglas y alergias. Los asientos contables se conservan disociados.
 
@@ -134,3 +134,7 @@ El chip genera en cada lectura una URL distinta con datos cifrados, un contador 
 | Sin sandbox de pey | Mitigado con montos de $0.01 y llaves separadas. |
 | Dependencia de conectividad en caja | Mitigado con datos móviles. Sin modo offline en el MVP. |
 | Aviso de privacidad | Por redactar antes del primer alumno real. |
+
+## 8. Infraestructura y automatizaciones (diseño v1.2)
+
+PostgreSQL sin acceso público; roles IAM mínimos, secretos fuera de imágenes y respaldo cifrado con restauración probada. n8n usa una API autenticada de notificaciones, sin escritura al ledger. Bedrock, si se adopta, recibe solo agregados sin identificadores ni datos de salud. El presupuesto debe verificar créditos elegibles y alertas; no se presupone un corte automático de gasto.

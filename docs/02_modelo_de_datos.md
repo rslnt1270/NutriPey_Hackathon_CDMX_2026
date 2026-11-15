@@ -8,6 +8,8 @@ Convenciones: los montos son enteros en centavos (`bigint`), las fechas son `tim
 
 ---
 
+Extensión planificada v1.2: #4 y #13 definirán canal/destino verificado, consentimiento de mensajería, lease e identificador/estado del proveedor en una migración nueva. Este ERD conserva el modelo base; no implementa todavía esas extensiones. `transaccion_id` en outbox debe admitir nulo para rechazos sin movimiento contable. Ver [spec](./08_spec_entrega_diciembre.md).
+
 ## 1. Diagrama Entidad-Relación
 
 ```mermaid
