@@ -23,7 +23,7 @@ D1: monolito Next.js con PostgreSQL, decidido el 15 noviembre. Los carriles deli
 
 | Carril | Rutas | Contenido |
 | :--- | :--- | :--- |
-| **Pagos** | `src/server/ledger/`, `src/server/pey/`, `src/server/notificaciones/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, outbox, migraciones. |
+| **Pagos** | `src/server/ledger/`, `src/server/pey/`, `src/server/notificaciones/`, `app/api/interno/notificaciones/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, outbox, migraciones. |
 | **Campus** | `app/(pos)/`, `app/(tutor)/`, `app/(escuela)/`, `app/api/pos/`, `src/server/reglas/`, `src/server/catalogo/`, `src/lib/nfc/` | POS, Web NFC, catálogo SEP, reglas del tutor, reportes, UI. |
 | **Compartido** | `Dockerfile`, `.dockerignore`, `compose*.yaml`, `package.json`, lockfile, `db/migrations/`, `src/server/ledger/index.ts`, `docs/contratos/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/` | Solo se cambia en un PR dedicado, pequeño, que se fusiona antes que el resto. |
 
