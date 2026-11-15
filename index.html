@@ -20,37 +20,37 @@
 <main class="grid">
   <!-- Tutor -->
   <section class="card">
-    <h2><span class="paso">1</span> Tutor recarga por CoDi</h2>
-    <label>Alumno
+    <h2><span class="paso">1</span> Tutor recarga por CoDi (simulado)</h2>
+    <label>Alumno (ficticio)
       <select id="t-alumno"></select>
     </label>
     <div class="montos" id="t-montos"></div>
-    <button id="t-generar">Generar cobro CoDi (QR)</button>
+    <button id="t-generar">Generar cobro CoDi simulado (QR)</button>
     <div id="t-qr" class="qr oculto">
       <svg id="t-qr-svg" viewBox="0 0 21 21" aria-label="QR de ejemplo, no válido"></svg>
-      <p class="mini">QR de ejemplo: no se puede pagar.<br>Referencia <code id="t-ref"></code></p>
-      <button id="t-pagar" class="ok">Simular pago desde mi banca</button>
+      <p class="mini">QR simulado: no se puede pagar.<br>Referencia <code id="t-ref"></code></p>
+      <button id="t-pagar" class="ok">Pago simulado desde mi banca</button>
     </div>
     <p id="t-estado" class="estado"></p>
     <hr>
-    <h3>Reglas del tutor</h3>
+    <h3>Reglas del tutor <span class="mini">(datos ficticios)</span></h3>
     <div id="t-reglas" class="reglas"></div>
     <label class="check"><input type="checkbox" id="t-bloqueo"> Suspender pulsera</label>
   </section>
 
   <!-- POS -->
   <section class="card">
-    <h2><span class="paso">2</span> Caja de la cooperativa</h2>
+    <h2><span class="paso">2</span> Caja de la cooperativa (simulado)</h2>
     <div id="p-catalogo" class="catalogo"></div>
     <div class="carrito">
       <div id="p-items" class="mini">Carrito vacío</div>
       <strong id="p-total">$0.00</strong>
     </div>
-    <label>Pulsera que se acerca
+    <label>Pulsera NFC (tap simulado)
       <select id="p-pulsera"></select>
     </label>
     <div class="fila">
-      <button id="p-cobrar">Cobrar con pulsera (tap NFC)</button>
+      <button id="p-cobrar">Cobrar con tap NFC simulado</button>
       <button id="p-vaciar" class="ghost">Vaciar</button>
     </div>
     <div id="p-resultado" class="resultado oculto"></div>
@@ -62,13 +62,14 @@
 
   <!-- Notificaciones -->
   <section class="card">
-    <h2><span class="paso">3</span> WhatsApp del tutor</h2>
+    <h2><span class="paso">3</span> Avisos (simulado)</h2>
+    <p class="mini">Avisos al tutor. Canal por confirmar: Telegram o WhatsApp.</p>
     <div id="w-chat" class="chat"></div>
   </section>
 
   <!-- Ledger -->
   <section class="card ancho">
-    <h2>Ledger de doble partida</h2>
+    <h2>Ledger de doble partida (simulado)</h2>
     <p class="mini">El dinero se liquida en la cuenta de la cooperativa. NutriPey solo registra el anticipo de cada alumno. Los asientos no se editan: un error se corrige con un reverso.</p>
     <div id="l-saldos" class="saldos"></div>
     <div class="tabla-wrap">
@@ -82,6 +83,7 @@
 
 <footer class="mini">Hackatón México 2026 · Prototipo del kickoff (issue #15). La integración real con pey está en especificación.</footer>
 <script src="ledger-sim.js"></script>
+<script src="sesion.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

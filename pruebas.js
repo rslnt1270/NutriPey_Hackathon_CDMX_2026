@@ -1,12 +1,15 @@
 // Pruebas del ledger simulado. Ejecutar con `node demo/pruebas.js` o `gjs demo/pruebas.js`.
-let L;
-if (typeof require !== "undefined") L = require("./ledger-sim.js");
+let L, S;
+if (typeof require !== "undefined") { L = require("./ledger-sim.js"); S = require("./sesion.js"); }
 else {
   const GLib = imports.gi.GLib;
   const dir = GLib.path_get_dirname(new Error().stack.split("\n")[0].replace(/^.*@|:\d+:\d+$/g, ""));
   const [, bytes] = GLib.file_get_contents(GLib.build_filenamev([dir, "ledger-sim.js"]));
   (0, eval)(new TextDecoder().decode(bytes));
   L = globalThis.LedgerSim;
+  const [, b2] = GLib.file_get_contents(GLib.build_filenamev([dir, "sesion.js"]));
+  (0, eval)(new TextDecoder().decode(b2));
+  S = globalThis.SesionDemo;
 }
 const log = typeof console !== "undefined" ? console.log : print;
 let fallas = 0, n = 0;
@@ -93,6 +96,53 @@ caso("asientos inmutables", () => {
   L.acreditarRecarga(st, { referencia: "R1", alumnoId: "a2", centavos: 5000, ahora: T });
   try { st.asientos[0].haber = 1; } catch { /* modo estricto lanza */ }
   igual(st.asientos[0].haber, 0);
+});
+
+// A1: reiniciar la demo con recargas pendientes no debe acreditar nada en el estado nuevo.
+function relojFalso({ ignorarCancelacion = false } = {}) {
+  const cola = new Map(); let sig = 0;
+  return {
+    setTimeout: (fn) => { cola.set(++sig, fn); return sig; },
+    clearTimeout: (id) => { if (!ignorarCancelacion) cola.delete(id); },
+    vencerTodo: () => { const fns = [...cola.values()]; cola.clear(); fns.forEach((f) => f()); },
+    get enCola() { return cola.size; },
+  };
+}
+function simularApp(reloj) {
+  // Mismo patrón que app.js: estado global reemplazado por iniciar(), recarga con temporizador.
+  const sesion = S.crearSesion(reloj);
+  const app = { st: null, avisos: 0 };
+  app.iniciar = () => { sesion.reiniciar(); app.st = L.crearEstado(); app.avisos = 0; };
+  app.pagar = (ref, alumnoId, centavos) => sesion.despues(() => {
+    L.acreditarRecarga(app.st, { referencia: ref, alumnoId, centavos, ahora: T });
+    app.avisos++;
+  }, 1200);
+  app.iniciar();
+  return app;
+}
+caso("A1: reinicio con dos recargas pendientes no acredita en el estado nuevo", () => {
+  const reloj = relojFalso(), app = simularApp(reloj);
+  app.pagar("R1", "a1", 5000); app.pagar("R2", "a2", 5000);
+  app.iniciar();
+  igual(reloj.enCola, 0, "temporizadores cancelados");
+  reloj.vencerTodo();
+  igual(L.saldo(app.st, "a1"), 0); igual(L.saldo(app.st, "a2"), 0);
+  igual(app.st.asientos.length, 0, "sin asientos tardíos"); igual(app.avisos, 0, "sin avisos tardíos");
+});
+caso("A1: aunque un temporizador viejo se dispare, la generación lo descarta", () => {
+  const reloj = relojFalso({ ignorarCancelacion: true }), app = simularApp(reloj);
+  app.pagar("R1", "a1", 5000); app.pagar("R2", "a1", 5000);
+  app.iniciar();
+  reloj.vencerTodo();
+  igual(L.saldo(app.st, "a1"), 0); igual(app.st.asientos.length, 0); igual(app.avisos, 0);
+});
+caso("A1: una recarga después del reinicio sí se acredita", () => {
+  const reloj = relojFalso(), app = simularApp(reloj);
+  app.pagar("R1", "a1", 5000);
+  app.iniciar();
+  app.pagar("R2", "a1", 2000);
+  reloj.vencerTodo();
+  igual(L.saldo(app.st, "a1"), 2000); igual(app.avisos, 1);
 });
 
 log(`\n${n - fallas}/${n} pruebas pasaron`);
