@@ -140,10 +140,11 @@ sequenceDiagram
             Backend-->>POS: 422 CREDENCIAL_INVALIDA
             POS-->>Cajero: Pantalla roja: credencial no válida
         else Producto bloqueado por regla del tutor
-            Backend->>DB: ROLLBACK y registro en auditoría
+            Backend->>DB: ROLLBACK del intento de cobro
+            Backend->>DB: BEGIN separado, auditoría y outbox de rechazo, COMMIT
             Backend-->>POS: 422 PRODUCTO_BLOQUEADO
             POS-->>Cajero: Pantalla roja: indica qué producto retirar
-            Backend-)Cola: Aviso inmediato al tutor
+            Cola->>DB: Reclama aviso de rechazo confirmado
         else Tope diario o saldo insuficiente
             Backend->>DB: ROLLBACK
             Backend-->>POS: 422 TOPE_DIARIO o SALDO_INSUFICIENTE
@@ -199,7 +200,7 @@ sequenceDiagram
     participant API as API interna autenticada
     participant N as n8n
     participant P as Telegram o WhatsApp
-    Note over DB: Operación y outbox confirmados atómicamente
+    Note over DB: Movimiento y outbox, o auditoría y outbox de rechazo, confirmados
     N->>API: Reclamar lote pendiente
     API->>DB: Reservar eventos con lease e intentos
     DB-->>API: eventId y destinatario autorizado
