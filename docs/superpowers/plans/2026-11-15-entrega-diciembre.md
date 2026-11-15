@@ -19,18 +19,18 @@ Un issue, una persona responsable, una rama y un worktree. Abrir PR en borrador 
 
 | Bloque / fechas | Issues y responsable | Rutas y entregable | Dependencia / prueba de salida |
 | :--- | :--- | :--- | :--- |
-| Prototipo, 15 nov | #15 Erika | Material de presentación, simulaciones señaladas | Independiente del producto; no marcar enviado sin evidencia |
-| Base, 15–16 nov | #1/#3/#19 tú; #2/#4/#28 Erika | `package.json`, CI, Dockerfile, compose.yaml, docs/contratos/ | PR #18, contrato aprobado por ambos, arranque reproducible y CI; #28 antes de cobro |
-| Datos, 16–18 nov | #6/#7 tú | `db/migrations/`, `src/server/ledger/` | #3/#4; migración, partida doble, saldo e idempotencia contra PostgreSQL |
-| Recarga, 17–20 nov | #5/#8/#9/#24 tú | `src/server/pey/`, `app/api/recargas/`, `app/api/webhooks/` | #7/#5; contrato pey vigente, QR/push y webhook firmados; duplicado no acredita dos veces |
-| Cobro, 19–22 nov | #10/#25/#26/#16/#29 tú | `src/server/ledger/`, `app/api/cron/` | #7/#28 y recargas; reversos, efectivo, reembolso manual, límites y conciliación concurrente |
-| HTTPS inicial, antes 22 nov | #30 tú | `infrastructure/aws/`, Docker y endpoint pey | #3/#19/#5; HTTPS válido y BD privada para integración real, sin esperar RDS |
-| Gate Pagos, 22 nov | #12 Erika | Evidencias en PR y `docs/` | #9/#10/#16/#24–26/#28/#29 y HTTPS #30; núcleo con fixtures, 5 de 20 cobros, firma inválida, doble evento, reverso |
-| Campus, 23–30 nov | #14/#17 Erika | `app/(pos)/`, `app/(tutor)/`, `app/(escuela)/`, `app/api/pos/`, reglas/catálogo/NFC | #12; dividir #17 en catálogo, reglas, consentimiento, credenciales y reporte; repetir pruebas con reglas reales |
-| Notificaciones, hasta 7 dic | #13 Erika; #22 tú | `src/server/notificaciones/`, `automation/n8n/`, `infrastructure/n8n/` | #4/#9; destinatario verificado, reintento, revocación y PC apagada sin interrumpir avisos |
-| AWS final, hasta 7 dic | #11/#23 tú | `infrastructure/aws/`, runbook en `docs/` | #30; costo, HTTPS, BD privada, healthcheck, restauración y rollback probados |
-| Extensiones, decidir antes 7 dic | #20 tú; #21 Erika | ADR/prueba aislada documentada | Lambda: #11/#16; Bedrock: #17. Go/no-go con costo y beneficio; implementación en nuevos issues solo si adoptados |
-| Entrega, 8–12 dic | #27 Erika; ambos validan | Evidencias, video y checklist | Todos los RF-01–23 y RN/RNF; no exige extensiones opcionales; congelar nuevas funciones el 8 |
+| Prototipo, 15 nov | #15 `eri2905` | Material de presentación, simulaciones señaladas | Independiente del producto; no marcar enviado sin evidencia |
+| Base, 15–16 nov | #1/#3/#19 `rslnt1270`; #2/#4/#28 `eri2905` | `package.json`, CI, Dockerfile, compose.yaml, docs/contratos/ | PR #18, contrato aprobado por ambos, arranque reproducible y CI; #28 antes de cobro |
+| Datos, 16–18 nov | #6/#7 `rslnt1270` | `db/migrations/`, `src/server/ledger/` | #3/#4; migración, partida doble, saldo e idempotencia contra PostgreSQL |
+| Recarga, 17–20 nov | #5/#8/#9/#24 `rslnt1270` | `src/server/pey/`, `app/api/recargas/`, `app/api/webhooks/` | #7/#5; contrato pey vigente, QR/push y webhook firmados; duplicado no acredita dos veces |
+| Cobro, 19–22 nov | #10/#25/#26/#16/#29 `rslnt1270` | `src/server/ledger/`, `app/api/cron/` | #7/#28 y recargas; reversos, efectivo, reembolso manual, límites y conciliación concurrente |
+| HTTPS inicial, antes 22 nov | #30 `rslnt1270` | `infrastructure/aws/`, Docker y endpoint pey | #3/#19/#5; HTTPS válido y BD privada para integración real, sin esperar RDS |
+| Gate Pagos, 22 nov | #12 `eri2905` | Evidencias en PR y `docs/` | #9/#10/#16/#24–26/#28/#29 y HTTPS #30; núcleo con fixtures, 5 de 20 cobros, firma inválida, doble evento, reverso |
+| Campus, 23–30 nov | #14/#17 `eri2905` | `app/(pos)/`, `app/(tutor)/`, `app/(escuela)/`, `app/api/pos/`, reglas/catálogo/NFC | #12; dividir #17 en catálogo, reglas, consentimiento, credenciales y reporte; repetir pruebas con reglas reales |
+| Notificaciones, hasta 7 dic | #13 `eri2905`; #22 `rslnt1270` | `src/server/notificaciones/`, `automation/n8n/`, `infrastructure/n8n/` | #4/#9; destinatario verificado, reintento, revocación y PC apagada sin interrumpir avisos |
+| AWS final, hasta 7 dic | #11/#23 `rslnt1270` | `infrastructure/aws/`, runbook en `docs/` | #30; costo, HTTPS, BD privada, healthcheck, restauración y rollback probados |
+| Extensiones, decidir antes 7 dic | #20 `rslnt1270`; #21 `eri2905` | ADR/prueba aislada documentada | Lambda: #11/#16; Bedrock: #17. Go/no-go con costo y beneficio; implementación en nuevos issues solo si adoptados |
+| Entrega, 8–12 dic | #27 `eri2905`; ambos validan | Evidencias, video y checklist | Todos los RF-01–23 y RN/RNF; no exige extensiones opcionales; congelar nuevas funciones el 8 |
 
 La prueba de Pagos con fixtures no es una autorización de piloto: catálogo/reglas/consentimiento reales se verifican en Campus y #27. Un retraso en #12 mueve Campus; no se oculta como trabajo completo. Infraestructura, contratos y trámites pueden avanzar en paralelo; una sesión por worktree.
 
