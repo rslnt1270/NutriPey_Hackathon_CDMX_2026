@@ -2,7 +2,9 @@
 
 15 noviembre 2026 · Sub-issue #32 de #15 · PR de la demo: #31.
 Meta: materiales listos 12:00, envío humano antes de 12:30; límite 13:00 CDMX.
-Estado: borrador para revisión; no acredita envío ni validación final de la demo.
+Estado: materiales en PR #33; demo corregida publicada y validada por Codex. Formulario todavía no enviado por Codex.
+Publicación: `83e786ab97e7382574575df679fc65e59a92a9ac`, desde integración `c996590979e5fc01b6b4e1ac5659f77250da0ea7` (PR #31 aprobado y fusionado). Build de Pages `43745883874` exitoso.
+Verificación en vivo: seis archivos idénticos al origen; 61/62 comprobaciones del script pasan en escritorio y 390 px. Única falla: consola registra 404 de `/favicon.ico`; todos los controles funcionales y A1 pasan. No probado en teléfono físico.
 
 ## Descripción para el formulario
 
@@ -26,7 +28,7 @@ El panel «Avisos (simulado)» está confirmado en el código publicado del PR #
 | Avisos | Vista denominada «Avisos (simulado)» con mensajes de ejemplo (cambio reportado por la sesión de demo). | No envía mensajes; el canal real sigue por decidir entre Telegram y WhatsApp. |
 | Ledger | Código de simulación con centavos enteros, doble partida y reversos. | No es el ledger real ni implementa todavía su contrato de backend. |
 | Pruebas | El PR reporta 15/15 pruebas de `demo/pruebas.js` tras A1. | Codex reprodujo 15/15 sobre `55e1b6b`; no son pruebas del backend productivo. |
-| Publicación | Vista previa en GitHub Pages. | La sesión de demo publica; URL y contenido final pendientes de validación tras congelar. |
+| Publicación | Demo corregida en GitHub Pages. | Publicada por Codex con autorización expresa; SHA y resultado de validación arriba. |
 | Infraestructura | Diseño documentado para la entrega de diciembre. | Esta demo no prueba AWS, Docker, PostgreSQL ni n8n. |
 
 ## Comentarios sobre API pey para el formulario
@@ -61,8 +63,8 @@ Video: pendiente de grabación y enlace público. Es opcional; no retrasar el en
 | Ciudad | Sí | pendiente — confirmar por canal privado y seleccionar en el formulario. |
 | Nombre del equipo | Sí | pendiente — confirmar por canal privado; no asumir que coincide con la marca del proyecto. |
 | Descripción del proyecto | Sí | Copiar los tres párrafos de «Descripción para el formulario», ajustados a la versión realmente publicada. |
-| Repositorio de código público (URL) | Sí | https://github.com/rslnt1270/NutriPey_Hackathon_CDMX_2026/tree/integracion/demo-kickoff/demo — enlace preparado para el envío; usar solo después de fusionar #31 con aprobación humana y confirmar que muestra el código. Mientras tanto, el código está en la rama del PR #31, no en `main`. |
-| Link de la app en vivo (preferido) | No | https://rslnt1270.github.io/NutriPey_Hackathon_CDMX_2026/ — validar la publicación final antes de pegar. |
+| Repositorio de código público (URL) | Sí | https://github.com/rslnt1270/NutriPey_Hackathon_CDMX_2026/tree/integracion/demo-kickoff/demo — enlace al código integrado mediante #31; incluye `sesion.js`. No está en `main`. |
+| Link de la app en vivo (preferido) | No | https://rslnt1270.github.io/NutriPey_Hackathon_CDMX_2026/ — publicación corregida comprobada; abrir una vez más antes de enviar. |
 | Video demo (opcional) | No | pendiente — enlace de acceso público, si se graba. |
 | Correos de los integrantes del equipo | Sí | pendiente — introducir uno por línea directamente en el formulario, usando los del registro Luma. Nunca guardarlos en este archivo ni en GitHub. |
 | Comentarios sobre API pey | Sí | Copiar los dos párrafos de comentarios de esta página, conservando que no hubo pagos reales. |
