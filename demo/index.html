@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NutriPey Demo</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>NutriPey <span class="tag">Prototipo · Simulación</span></h1>
+    <p class="sub">Cobro sin efectivo para cooperativas escolares. Recarga CoDi, pulsera NFC y reglas del tutor.</p>
+  </div>
+  <button id="reset" class="ghost">Reiniciar demo</button>
+</header>
+
+<p class="aviso">Todo en esta página es simulado: no hay conexión con pey ni con bancos, no se mueve dinero y los alumnos son ficticios. El dinero se maneja en centavos enteros, como en el sistema real.</p>
+
+<main class="grid">
+  <!-- Tutor -->
+  <section class="card">
+    <h2><span class="paso">1</span> Tutor recarga por CoDi (simulado)</h2>
+    <label>Alumno (ficticio)
+      <select id="t-alumno"></select>
+    </label>
+    <div class="montos" id="t-montos"></div>
+    <button id="t-generar">Generar cobro CoDi simulado (QR)</button>
+    <div id="t-qr" class="qr oculto">
+      <svg id="t-qr-svg" viewBox="0 0 21 21" aria-label="QR de ejemplo, no válido"></svg>
+      <p class="mini">QR simulado: no se puede pagar.<br>Referencia <code id="t-ref"></code></p>
+      <button id="t-pagar" class="ok">Pago simulado desde mi banca</button>
+    </div>
+    <p id="t-estado" class="estado"></p>
+    <hr>
+    <h3>Reglas del tutor <span class="mini">(datos ficticios)</span></h3>
+    <div id="t-reglas" class="reglas"></div>
+    <label class="check"><input type="checkbox" id="t-bloqueo"> Suspender pulsera</label>
+  </section>
+
+  <!-- POS -->
+  <section class="card">
+    <h2><span class="paso">2</span> Caja de la cooperativa (simulado)</h2>
+    <div id="p-catalogo" class="catalogo"></div>
+    <div class="carrito">
+      <div id="p-items" class="mini">Carrito vacío</div>
+      <strong id="p-total">$0.00</strong>
+    </div>
+    <label>Pulsera NFC (tap simulado)
+      <select id="p-pulsera"></select>
+    </label>
+    <div class="fila">
+      <button id="p-cobrar">Cobrar con tap NFC simulado</button>
+      <button id="p-vaciar" class="ghost">Vaciar</button>
+    </div>
+    <div id="p-resultado" class="resultado oculto"></div>
+    <div class="fila">
+      <button id="p-repetir" class="ghost oculto">Repetir con la misma llave</button>
+      <button id="p-anular" class="ghost oculto">Anular (2 min)</button>
+    </div>
+  </section>
+
+  <!-- Notificaciones -->
+  <section class="card">
+    <h2><span class="paso">3</span> Avisos (simulado)</h2>
+    <p class="mini">Avisos al tutor. Canal por confirmar: Telegram o WhatsApp.</p>
+    <div id="w-chat" class="chat"></div>
+  </section>
+
+  <!-- Ledger -->
+  <section class="card ancho">
+    <h2>Ledger de doble partida (simulado)</h2>
+    <p class="mini">El dinero se liquida en la cuenta de la cooperativa. NutriPey solo registra el anticipo de cada alumno. Los asientos no se editan: un error se corrige con un reverso.</p>
+    <div id="l-saldos" class="saldos"></div>
+    <div class="tabla-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Hora</th><th>Tipo</th><th>Cuenta</th><th class="num">Debe</th><th class="num">Haber</th></tr></thead>
+        <tbody id="l-asientos"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<footer class="mini">Hackatón México 2026 · Prototipo del kickoff (issue #15). La integración real con pey está en especificación.</footer>
+<script src="ledger-sim.js"></script>
+<script src="sesion.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
