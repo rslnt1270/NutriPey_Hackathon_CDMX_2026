@@ -180,6 +180,7 @@ type EvidenciaCodi = {
   peyTransactionId: string;     // transactionId del pago
   bankAccountId: string;        // cuenta receptora observada en el pago
   montoCentavos: Centavos;      // amount de pey convertido a centavos con aritmética entera
+  pagadoEn: number;            // datePaid de pey: entero seguro, segundos Unix UTC
   codiQrId: string | null;      // QR; nulo en push
   webhookId: string | null;     // solo fuente WEBHOOK (fila de WEBHOOK_EVENTO)
 };
@@ -206,8 +207,8 @@ function acreditarRecarga(
 
 **Quién verifica qué:**
 
-- **Webhook (#9):** verifica la firma sobre el cuerpo crudo, deduplica `webhook-id` y arma `EvidenciaCodi` con los campos del evento (`transactionId`, `bankAccountId`, `amount`, `codiQrId`).
-- **Conciliador (#16):** arma la evidencia con lo que devuelve `GET /transaction/bank-account/{id}` hecho con la API key propia, **fuera** de la transacción. El `bankAccountId` sale de la cuenta consultada.
+- **Webhook (#9):** verifica la firma sobre el cuerpo crudo, deduplica `webhook-id` y arma `EvidenciaCodi` con los campos del evento (`transactionId`, `bankAccountId`, `amount`, `codiQrId`, `datePaid`).
+- **Conciliador (#16):** arma la evidencia con lo que devuelve `GET /transaction/bank-account/{id}` hecho con la API key propia, **fuera** de la transacción. El `bankAccountId` sale de la cuenta consultada. Solo usa transacciones PAID; toma `datePaid` del resultado o consulta `GET /transaction/{id}` fuera de la transacción para completarlo. Si no obtiene una fecha de pago verificable, conserva el pago como incidencia para revisión, sin llamar a acreditar ni inventar una fecha de recepción.
 - **Ledger:** dentro de la transacción, con la recarga bloqueada (`FOR UPDATE`), compara la evidencia contra lo que tiene guardado:
   - `evidencia.bankAccountId` contra `cooperativa.pey_bank_account_id` de **la cooperativa de la recarga**. Si no coincide, `CUENTA_DISTINTA`.
   - `codiQrId` contra `recarga.pey_codi_qr_id` en QR, o `peyTransactionId` contra `recarga.pey_transaction_id` en push. Si no coincide, `NO_CORRELACIONA`.
@@ -218,7 +219,8 @@ function acreditarRecarga(
 
 - CoDi es idempotente por `peyTransactionId` (`UNIQUE`). Webhook y conciliador pueden traer el mismo pago y solo se acredita una vez; la segunda vez responde `yaAcreditada: true`.
 - La acreditación guarda un vínculo inmutable recarga↔transacción contable↔peyTransactionId, único por recarga y por pago. Bajo el lock de la recarga se consulta ese vínculo **antes** de decidir por estado: el mismo pago reproduce el resultado; un pago distinto da `PAGO_ADICIONAL` aunque el estado mutable haya cambiado. La incidencia del pago adicional se registra aparte, deduplicada por peyTransactionId, sin modificar la acreditación original ni pasar la recarga PAGADA a REVISION.
-- Sin acreditación previa, solo una recarga `PENDIENTE` y con evidencia válida puede acreditarse automáticamente. Una recarga en `REVISION` u otro estado no pendiente da `REVISION_MANUAL`; incluso un pago tardío válido requiere resolución humana si ya venció. Los rechazos se registran sin asientos en una incidencia deduplicada por pago; una recarga existente sin acreditar pasa a REVISION. Si la recarga no existe, solo se conserva la incidencia. Repetir la evidencia no borra ni reabre la incidencia; el proceso manual se define aparte.
+- Sin acreditación previa, CoDi puede acreditar una recarga `PENDIENTE` o `EXPIRADA` si toda la evidencia es válida y `pagadoEn <= expira_en` comparados como instantes UTC (datePaid viene en segundos, no milisegundos). La hora de llegada del webhook no decide la vigencia. `pagadoEn` debe ser un entero seguro no negativo convertido sin desbordamiento; falta o formato inválido nunca autoriza crédito. Un pago posterior a expira_en, una recarga en REVISION u otro estado no admitido requiere `REVISION_MANUAL`. La recarga en efectivo solo admite PENDIENTE no vencida al tomar el lock; no tiene fecha de pey. Los rechazos se registran sin asientos en una incidencia deduplicada por pago; una recarga existente sin acreditar pasa a REVISION. Si la recarga no existe, solo se conserva la incidencia. Repetir la evidencia no borra ni reabre la incidencia; el proceso manual se define aparte.
+- El cron de vencimiento toma `FOR UPDATE` sobre la misma recarga y relee su estado/vínculo: solo PENDIENTE sin acreditación y con expira_en pasado puede pasar a EXPIRADA. Si acreditar ganó primero, el cron no modifica PAGADA; si el cron ganó, acreditar puede recuperar EXPIRADA usando la fecha real del pago.
 - RN-02 **no** bloquea un pago CoDi ya recibido (eso se aplica al crear el cobro en #26). En efectivo sí se rechaza con `LIMITE_EFECTIVO` si se supera el tope mensual de efectivo.
 - Asientos: en CODI, débito `BANCO` y crédito `ANTICIPO_ALUMNO`; en EFECTIVO, débito `CAJA_EFECTIVO` y crédito `ANTICIPO_ALUMNO`. El aviso `RECARGA_ACREDITADA` se escribe en la misma transacción.
 
@@ -292,6 +294,8 @@ Prueba A5: A rechaza K y libera el lock; B aprueba K y confirma; A persiste su r
 Prueba A6: P1 acredita; P2 adicional, P2 repetido y P3 nunca crean otro anticipo automático; P1 sigue devolviendo su resultado original. Probar también recarga en REVISION sin vínculo y carrera de dos pagos distintos para una recarga: máximo una acreditación, incidencias deduplicadas.
 
 Prueba C1: A rechaza, B confirma antes de la persistencia de A; al terminar A hay auditoría/conteo únicos pero cero eventos COMPRA_BLOQUEADA por ese rechazo tardío. Sin éxito concurrente, la transición a RECHAZADA y el aviso elegible se confirman juntos; repetir no duplica.
+
+Prueba C2: cron antes/después del webhook, pago antes y exactamente en expira_en, y entrega demorada: una sola acreditación aunque el estado ya sea EXPIRADA. Pago después del plazo o fecha ausente/inválida: sin acreditación automática, incidencia de revisión. Probar unidades segundos frente a milisegundos. Fuente consultada: [OpenAPI de pey](https://docs.pey.mx/openapi.json), datePaid en GET /transaction/{id} y en la lista de la cuenta.
 
 ## Preguntas abiertas
 
