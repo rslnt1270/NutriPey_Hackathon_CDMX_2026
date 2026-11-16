@@ -6,12 +6,12 @@ const hora = (ms) => new Date(ms).toLocaleTimeString("es-MX", { timeZone: "Ameri
 const nuevaLlave = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 
 const sesion = window.SesionDemo.crearSesion();
-let st, monto, recargaPendiente, carrito, ultimoCobro;
+let st, monto, recargaPendiente, qrVisible, carrito, ultimoCobro;
 
 function iniciar() {
   sesion.reiniciar(); // A1: ninguna recarga de la sesión anterior escribe en la nueva
   st = L.crearEstado();
-  monto = 5000; recargaPendiente = null; carrito = {}; ultimoCobro = null;
+  monto = 5000; recargaPendiente = null; qrVisible = null; carrito = {}; ultimoCobro = null;
   $("w-chat").innerHTML = "";
   $("t-qr").classList.add("oculto");
   $("t-estado").textContent = "";
@@ -91,6 +91,7 @@ $("t-bloqueo").addEventListener("change", (e) => {
 
 $("t-generar").addEventListener("click", () => {
   recargaPendiente = { referencia: "SIM-" + nuevaLlave().slice(0, 8).toUpperCase(), alumnoId: alumnoTutor(), centavos: monto };
+  qrVisible = recargaPendiente.referencia; // M2 (#35): solo este QR puede cerrarse a sí mismo
   pintarQr(recargaPendiente.referencia);
   $("t-ref").textContent = recargaPendiente.referencia;
   $("t-qr").classList.remove("oculto");
@@ -106,8 +107,12 @@ $("t-pagar").addEventListener("click", () => {
   sesion.despues(() => {
     L.acreditarRecarga(st, { ...rec, ahora: Date.now() });
     const a = st.alumnos[rec.alumnoId];
-    $("t-estado").textContent = `✅ Recarga acreditada: ${mxn(rec.centavos)} (pago simulado)`;
-    $("t-qr").classList.add("oculto");
+    // M2 (#35): si mientras tanto se generó otro QR, no se oculta ni se pisa su estado.
+    if (qrVisible === rec.referencia) {
+      qrVisible = null;
+      $("t-estado").textContent = `✅ Recarga acreditada: ${mxn(rec.centavos)} (pago simulado)`;
+      $("t-qr").classList.add("oculto");
+    }
     aviso(`💚 Recarga de ${mxn(rec.centavos)} acreditada para ${a.iniciales}. Saldo: ${mxn(L.saldo(st, rec.alumnoId))}.`);
     pintarLedger();
   }, 1200);
