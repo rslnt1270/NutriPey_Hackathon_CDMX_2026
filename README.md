@@ -3,7 +3,7 @@
 Cobro sin efectivo para cooperativas escolares, con recarga por CoDi y cumplimiento de la norma de alimentación saludable.
 
 > Proyecto del **Hackatón México 2026** (AI Builders México, SpaceXAI Ambassadors, pey, SEDECO CDMX y Cursor).
-> Estado: **especificación**. El código de aplicación aún no existe. Entrega principal: **12 de diciembre de 2026**; el kickoff del 15 de noviembre es un prototipo previo. Punto de retoma: [docs/07_estado_y_siguientes_pasos.md](./docs/07_estado_y_siguientes_pasos.md).
+> Estado: **base de aplicación**. Next.js arranca y dispone de pruebas de humo; Pagos y Campus aún no están implementados. Entrega principal: **12 de diciembre de 2026**; el kickoff del 15 de noviembre es un prototipo previo. Punto de retoma: [docs/07_estado_y_siguientes_pasos.md](./docs/07_estado_y_siguientes_pasos.md).
 
 ## Resumen
 
@@ -108,6 +108,10 @@ Las cifras regulatorias deben confirmarse en el DOF antes de presentarse. Fuente
 │   └── contratos/         Interfaces acordadas entre carriles
 └── scripts/               Verificación de enlaces y alta de issues
 ```
+
+## Arranque local
+
+Consulta la [guía de desarrollo](./docs/desarrollo/base.md) para instalar con `npm ci`, arrancar Next.js y ejecutar las pruebas con PostgreSQL desechable. El prototipo del kickoff está separado en [nutripey.y4ga.app](https://nutripey.y4ga.app/).
 
 ## Cómo contribuir
 
