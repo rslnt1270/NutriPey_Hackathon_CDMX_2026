@@ -22,7 +22,7 @@ La imagen fija Node 22.22.2/bookworm-slim y Compose PostgreSQL 18.6/bookworm. El
 
 ## Imagen y salud
 
-Tres etapas: dependencias, build y runtime. Next genera salida standalone; la imagen final instala con `npm ci --omit=dev`, incluye los estáticos y arranca `server.js` como usuario `node`. No necesita TypeScript ni ESLint en runtime. `pg` sigue siendo exclusivo de pruebas: moverlo a dependencies cuando Pagos lo importe en producción. No hay directorio `public/` todavía; al incorporarlo habrá que copiarlo explícitamente al runtime.
+Tres etapas: dependencias, build y runtime. Next genera salida standalone; la imagen final conserva los módulos trazados por Next, incluye los estáticos y arranca `server.js` como usuario `node`. No vuelve a instalar dependencias: `npm ci` usa el lockfile solo en la etapa de dependencias y la etapa runtime copia la salida standalone. No necesita TypeScript ni ESLint en runtime. `pg` sigue siendo exclusivo de pruebas: moverlo a dependencies cuando Pagos lo importe en producción. No hay directorio `public/` todavía; al incorporarlo habrá que copiarlo explícitamente al runtime.
 
 `.dockerignore` excluye dependencias locales, Git, archivos `.env*`, claves y documentación del contexto. No pasar credenciales como build args. La configuración Next mantiene `agentRules: false` y `next-env.d.ts` sigue ignorado.
 
