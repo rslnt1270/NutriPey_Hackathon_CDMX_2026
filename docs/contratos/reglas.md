@@ -80,7 +80,7 @@ Pagos lo ejecuta en `cobrar`, todo en un único `BEGIN ... COMMIT`:
 7. Calcula `total = Σ cantidad × precioUnitarioCentavos` con enteros, comprobando `Number.isSafeInteger` en cada producto y en la suma. Si `total > MAX_MONTO_OPERACION_CENTAVOS`, el resultado es `TOTAL_EXCEDE_LIMITE` (ledger.md v1 §1). Esta es la única comprobación del total, porque antes de la transacción no se conocen los precios.
 8. Tope diario: si `topeDiarioCentavos` no es nulo y `gastadoHoy + total > tope`, `TOPE_DIARIO`. `gastadoHoy` lo calcula Pagos (compras menos reversos del día CDMX), no Campus.
 9. Saldo: si `total > saldo`, `SALDO_INSUFICIENTE`. Además el `CHECK` de la BD protege aunque falle el código.
-10. Escribe asientos, `DETALLE_VENTA` con los precios que devolvió el evaluador y el outbox. Luego `COMMIT`.
+10. Escribe asientos, `DETALLE_VENTA` con los precios que devolvió el evaluador. Luego `COMMIT`.
 
 **Vigencia (versión coherente):** en `READ COMMITTED`, cada sentencia tiene su propia foto, y por eso reglas, consentimiento y catálogo se leen en **una sola sentencia** (paso 5). La evaluación usa exactamente el estado confirmado en el instante de esa sentencia. Nunca combina una regla vieja con un consentimiento nuevo, porque no hay dos lecturas.
 
@@ -88,7 +88,7 @@ Pagos lo ejecuta en `cobrar`, todo en un único `BEGIN ... COMMIT`:
 - Los escritores de Campus no necesitan bloquear la cuenta ni coordinarse con `cobrar`. Solo deben cumplir una regla: cada cambio que el tutor ve como uno solo (por ejemplo, regla más consentimiento de salud) se confirma en **una** transacción. Así nunca existe un estado intermedio que la lectura pueda observar.
 - No se usa `REPEATABLE READ` ni `SERIALIZABLE`, para no agregar reintentos por conflicto de serialización en el camino del cobro (p95 de 800 ms).
 
-Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1: `ROLLBACK`, y auditoría y aviso en otra transacción.
+Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1: `ROLLBACK`, y auditoría en otra transacción.
 
 ## 4. Límites y tiempos
 
@@ -109,7 +109,7 @@ Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1
 
 ## 5. Reglas de negocio del evaluador
 
-**Conteo para RF-18:** `alergenosParaConteo` solo incrementa `conteo_bloqueo(cooperativa_id, fecha_cdmx, alergeno, n)` en la transacción del rechazo (ledger.md §4). La unidad es un hecho de rechazo único `(intento_id, motivo)` por código de alérgeno distinto: incrementar una vez cada código solo si `INSERT AUDIT_LOG ... ON CONFLICT DO NOTHING RETURNING` insertó por primera vez ese hecho. Insertar auditoría, incrementar conteos y escribir outbox en la misma transacción; un conflicto no incrementa. Dos productos con el mismo alérgeno cuentan una vez; una reevaluación del mismo intento/motivo no añade códigos ni conteos. Esa tabla no tiene alumno, operador, intento ni hora. El código de alérgeno **no** se guarda en `AUDIT_LOG`, en el outbox ni en logs; la auditoría individual solo guarda el tipo de regla (`ALERGENO` o `CATEGORIA`).
+**Conteo para RF-18:** `alergenosParaConteo` solo incrementa `conteo_bloqueo(cooperativa_id, fecha_cdmx, alergeno, n)` en la transacción del rechazo (ledger.md §4). La unidad es un hecho de rechazo único `(intento_id, motivo)` por código de alérgeno distinto: incrementar una vez cada código solo si `INSERT AUDIT_LOG ... ON CONFLICT DO NOTHING RETURNING` insertó por primera vez ese hecho. Insertar auditoría e incrementar conteos en la misma transacción; un conflicto no incrementa. Dos productos con el mismo alérgeno cuentan una vez; una reevaluación del mismo intento/motivo no añade códigos ni conteos. Esa tabla no tiene alumno, operador, intento ni hora. El código de alérgeno **no** se guarda en `AUDIT_LOG`, en el outbox ni en logs; la auditoría individual solo guarda el tipo de regla (`ALERGENO` o `CATEGORIA`).
 
 
 - Un producto que no existe, de otra cooperativa, con `publicable = false` o `disponible = false` da `PRODUCTO_NO_DISPONIBLE`. Esto se revisa antes que las reglas del tutor.
@@ -129,7 +129,7 @@ Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1
 
 - **Pagos (#10):** cada motivo con fixtures; salidas corruptas del evaluador (vacía, producto extra u omitido, cantidad distinta, precio 0, fraccionario o negativo, total fuera de rango seguro) dan rollback y `ErrorInterno` sin asientos; precio cambiado entre la solicitud y el paso 5 usa el precio leído; total por encima del límite da `TOTAL_EXCEDE_LIMITE`; un evaluador que lanza excepción produce rollback sin asientos; vencer `transaction_timeout` con varias sentencias inferiores a 200 ms da 503, descarta la conexión terminada y la siguiente adquisición funciona; vencer statement_timeout con una sentencia lenta exige rollback confirmado si la sesión sigue viva; la prueba de arquitectura de §4 falla si Campus importa `pg` o el pool.
 - **Campus (#17):** alérgeno con consentimiento vigente bloquea y sin él no bloquea; categoría bloqueada; producto no publicable; varios bloqueos en una venta; ninguna consulta toca tablas del ledger; logs sin alergias.
-- **Conteo (#10/#17):** repetir K con el mismo motivo, incluso concurrentemente, conserva n; dos productos con el mismo alérgeno suman uno por hecho; una llave distinta suma otro. Un rollback de auditoría/outbox revierte también el incremento; no se guardan identificadores del alumno en el agregado.
+- **Conteo (#10/#17):** repetir K con el mismo motivo, incluso concurrentemente, conserva n; dos productos con el mismo alérgeno suman uno por hecho; una llave distinta suma otro. Un rollback de la auditoría revierte también el incremento; no se guardan identificadores del alumno en el agregado.
 - **Integración (#17):** 20 cobros simultáneos con reglas reales y saldo para 5 dan 5 aprobados; cambio atómico de regla y consentimiento intercalado con cobros concurrentes: cada cobro ve el estado anterior completo o el nuevo completo, nunca una mezcla; un cambio confirmado antes del paso 5 se respeta en ese cobro.
 
 Semántica del servidor: [transaction_timeout termina la sesión](https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-TRANSACTION-TIMEOUT).
