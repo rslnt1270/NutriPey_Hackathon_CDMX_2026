@@ -38,9 +38,30 @@ type Centavos = number;
 
 - Las genera quien origina la operación (POS, caja o administración) como UUID v4: una por intención de negocio, no por intento HTTP.
 - El ámbito es `(cooperativaId, operación, idempotencyKey)`.
-- La primera ejecución guarda un hash SHA-256 de la entrada canónica. Si la misma llave llega con otra entrada, el resultado es `ErrorIdempotencia` y no hay ningún efecto.
-- Repetir una llave cuya operación se **confirmó** devuelve exactamente el resultado original, aunque el estado haya cambiado después.
-- Un **rechazo de negocio** no crea `TRANSACCION`. Si la misma llave se reintenta, la operación se vuelve a evaluar (el tutor pudo recargar en el intermedio). La auditoría y el aviso del rechazo se deduplican por `(idempotencyKey, motivo, destinatario)` (sección 4).
+- Si la misma llave llega con otra entrada, el resultado es `ErrorIdempotencia` (409) y no hay ningún efecto.
+- Repetir una llave cuya operación se **confirmó** devuelve exactamente el resultado original, aunque el estado haya cambiado después. Antes de devolverlo se vuelve a comprobar que el operador actual esté activo en esa cooperativa; si no, `ErrorNoAutorizado`.
+- Un **rechazo de negocio** no crea `TRANSACCION`. Si la misma llave se reintenta, la operación se vuelve a evaluar (el tutor pudo recargar en el intermedio). Un 422 no autoriza un reintento automático: lo decide el cajero.
+
+### Registro de intención
+
+La vinculación llave↔entrada vive en una tabla propia, `intento_operacion`, que no es un asiento financiero:
+
+| Columna | Uso |
+| :--- | :--- |
+| `id` | UUID generado por el servidor; es la identidad canónica de la intención (la usan auditoría y outbox) |
+| `cooperativa_id`, `operacion`, `llave` | `UNIQUE (cooperativa_id, operacion, llave)` |
+| `hash_entrada` | SHA-256 de la entrada canónica |
+| `estado` | `EN_CURSO` → `CONFIRMADA` \| `RECHAZADA` (`RECHAZADA` puede volver a `EN_CURSO` al reevaluar) |
+| `evaluaciones`, `ultimo_motivo` | Contador de evaluaciones y último motivo de rechazo |
+| `resultado`, `transaccion_id` | Solo en `CONFIRMADA`; `resultado` es el JSON devuelto |
+
+1. **Alta**, en su propia transacción corta y antes de la del dinero: `INSERT ... ON CONFLICT DO NOTHING` y luego se lee la fila. Si el hash no coincide, 409. Esta fila **sobrevive** a cualquier rollback posterior.
+2. **Operación:** la transacción del dinero bloquea primero la fila de intención (`FOR UPDATE`), y después la cuenta. Dos solicitudes simultáneas con la misma llave quedan en serie: la segunda ve `CONFIRMADA` y devuelve el resultado, o ve `RECHAZADA`/`EN_CURSO` y reevalúa.
+3. **Éxito:** en la misma transacción del dinero se marca `CONFIRMADA` con `resultado` y `transaccion_id`.
+4. **Rechazo:** rollback del dinero y, en otra transacción, `RECHAZADA` más `evaluaciones + 1`, `ultimo_motivo`, auditoría y outbox (sección 4).
+5. La vinculación llave↔hash es **permanente**, aunque la ejecución se haya abortado por completo. Una llave nunca se reutiliza con otra entrada.
+
+**Entrada canónica:** JSON con las claves en orden alfabético, sin espacios, con `operacion` y `cooperativaId` incluidos. En `cobrar` entra `sha256(tokenCredencial)` y no el token crudo, y las partidas se ordenan por `productoId`. `operadorId` **no** entra en el hash (otro cajero puede reintentar la venta), pero se autoriza en cada llamada.
 
 ### Errores
 
