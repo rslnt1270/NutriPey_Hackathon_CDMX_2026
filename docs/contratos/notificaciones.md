@@ -16,6 +16,7 @@ type TipoEvento =
   | "COMPRA_APROBADA"
   | "COMPRA_ANULADA"
   | "COMPRA_BLOQUEADA"         // rechazo por regla del tutor, sin motivo médico
+  | "SALDO_BAJO"               // RF-19: el saldo cruzó el umbral del tutor
   | "LIMITE_CUENTA_80"         // RN-02, destinatario: ADMIN de la cooperativa
   | "LIMITE_CUENTA_100";
 
@@ -25,10 +26,11 @@ type EventoNotificacion = {
   tipo: TipoEvento;
   ocurridoEn: string;         // ISO 8601 UTC
   destinatario: {
+    tipo: "TUTOR" | "OPERADOR"; // OPERADOR solo en LIMITE_CUENTA_* (rol ADMIN)
     canal: "TELEGRAM" | "WHATSAPP";
     destinoId: string;        // chat_id verificado o teléfono E.164; solo en la respuesta de reclamar
   };
-  alumnoAlias: string | null; // "Alumno A"; nulo en eventos para ADMIN
+  alumnoAlias: string | null; // "Alumno A"; nulo cuando el destinatario es OPERADOR
   variables: {
     montoCentavos?: number;   // entero
     saldoCentavos?: number;   // entero
@@ -43,6 +45,8 @@ Privacidad (L6 de la revisión del PR #18, documento 04 §4):
 - Nunca se incluyen nombre, iniciales, matrícula, foto, grupo, alergias ni el motivo de un bloqueo. `alumnoAlias` es un alias neutro asignado por el sistema por tutor ("Alumno A", "Alumno B") y no es texto libre. El tutor ve en su app a qué alumno corresponde.
 - Un alias es único dentro del conjunto de alumnos de cada tutor. Dos tutores de un mismo alumno pueden verlo con alias distintos.
 - `destinoId` solo aparece en la respuesta de `reclamar`. No se registra en logs de la API ni de n8n (configurar retención de ejecuciones en #22).
+
+**`SALDO_BAJO`:** cada vínculo tutor–alumno tiene `umbral_saldo_bajo_centavos` (por defecto 5000, es decir $50; el tutor lo cambia y con 0 lo desactiva). El evento se genera en la transacción de `cobrar` solo cuando el saldo **cruza** el umbral (antes ≥ umbral, después < umbral), así que no se repite en cada compra. Vuelve a poder generarse cuando una recarga deja el saldo en el umbral o por encima.
 
 ## 2. Identidad y deduplicación
 
@@ -59,6 +63,9 @@ eventId     = UUIDv5(NS_NUTRIPEY, utf8(nombre))
 | :--- | :--- |
 | `RECARGA_ACREDITADA`, `COMPRA_APROBADA` | `transaccionId` |
 | `COMPRA_BLOQUEADA` | `intento_operacion.id + "|" + motivo` (la misma identidad del rechazo que usa la auditoría) |
+| `COMPRA_ANULADA` | `reversoId`; se escribe en la transacción de `anular` |
+| `SALDO_BAJO` | `transaccionId` del cobro que cruzó el umbral |
+| `LIMITE_CUENTA_80`, `LIMITE_CUENTA_100` | `cooperativaId + "|" + AAAA-MM` (mes CDMX); `tipo` ya distingue el umbral |
 
 - Cada componente es un UUID o un enum en mayúsculas, sin `|`, así que la concatenación no es ambigua. `destinatarioId` es el UUID del tutor u operador, nunca el teléfono ni el `chat_id`.
 - El outbox tiene `UNIQUE (event_id)` y se inserta con `ON CONFLICT DO NOTHING`.
@@ -68,10 +75,21 @@ eventId     = UUIDv5(NS_NUTRIPEY, utf8(nombre))
 
 Se comprueba **dos veces**: al escribir el evento y otra vez al reclamarlo.
 
+**Tutor:**
+
 1. Existe un vínculo `TUTOR_ESTUDIANTE` vigente.
 2. El tutor tiene un consentimiento de mensajería vigente (sin `revocado_en`).
 3. El destino está verificado (`chat_id` confirmado por el bot o teléfono confirmado).
-4. La preferencia del tutor admite el tipo de evento (`POR_COMPRA`, `RESUMEN_DIARIO` o `SOLO_ALERTAS`). Los resúmenes diarios se arman en #13 y no forman parte de este contrato v1.
+4. La preferencia del tutor admite el tipo de evento:
+
+| Tipo | `POR_COMPRA` | `RESUMEN_DIARIO` | `SOLO_ALERTAS` |
+| :--- | :---: | :---: | :---: |
+| `RECARGA_ACREDITADA`, `COMPRA_BLOQUEADA`, `SALDO_BAJO` (alertas RF-19) | sí | sí | sí |
+| `COMPRA_APROBADA`, `COMPRA_ANULADA` | sí | no (van en el resumen, #13) | no |
+
+**Operador:** rol `ADMIN`, activo en la cooperativa del evento, con destino verificado y suscripción a alertas de la cuenta activada. No necesita vínculo con alumnos ni consentimiento de tutor, porque el evento no contiene datos de menores.
+
+Los resúmenes diarios se arman en #13 y no forman parte de este contrato v1.
 
 Si al reclamar ya no cumple, el evento pasa a `DESCARTADO` y no se entrega a n8n. Revocar el consentimiento detiene los avisos futuros y los que estén pendientes.
 
@@ -139,7 +157,7 @@ El outbox v1.1 se amplía **por migración nueva**, sin editar las fusionadas: `
 
 ## 6. Pruebas que exige el contrato
 
-Token inválido da 401. Dos reclamos concurrentes sin solapamiento. Caída del worker después de que el proveedor acepta y antes de confirmar: el evento pasa a `INCIERTO` sin reenvío. Confirmación tardía de un lease vencido: `ENVIADA`. Confirmación duplicada con otro id: 409 y duplicado auditado. Cinco reclamos sin éxito: `REVISION_MANUAL`. `RESULTADO_DESCONOCIDO`: `INCIERTO`. Consentimiento revocado entre la escritura y el reclamo que lleva a `DESCARTADO`. Hermanos con alias distintos y sin cruce entre tutores. Payloads sin nombre, iniciales ni alergias (aserción sobre el JSON completo).
+Token inválido da 401. Dos reclamos concurrentes sin solapamiento. Caída del worker después de que el proveedor acepta y antes de confirmar: el evento pasa a `INCIERTO` sin reenvío. Confirmación tardía de un lease vencido: `ENVIADA`. Confirmación duplicada con otro id: 409 y duplicado auditado. Cinco reclamos sin éxito: `REVISION_MANUAL`. `RESULTADO_DESCONOCIDO`: `INCIERTO`. Consentimiento revocado entre la escritura y el reclamo que lleva a `DESCARTADO`. Hermanos con alias distintos y sin cruce entre tutores. ADMIN sin vínculo con alumnos recibe `LIMITE_CUENTA_80`; el mismo umbral en el mismo mes no se repite y en el mes siguiente sí. `SALDO_BAJO` solo al cruzar, también con `SOLO_ALERTAS`. `COMPRA_ANULADA` sale de `anular`. Payloads sin nombre, iniciales ni alergias (aserción sobre el JSON completo).
 
 ## Preguntas abiertas
 

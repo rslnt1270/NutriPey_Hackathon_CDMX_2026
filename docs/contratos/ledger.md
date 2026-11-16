@@ -143,7 +143,7 @@ function cobrar(input: {
 ```
 
 - `tokenCredencial` llega crudo y se resuelve dentro de la transacción por `token_hash`. En NTAG 424 la verificación SDM y el avance del contador se hacen en esa misma transacción (si el contador se repite o retrocede, `CREDENCIAL_INVALIDA`). El verificador criptográfico vive en `src/lib/nfc/` como función pura que no toca la BD.
-- Asientos al aprobar: débito `ANTICIPO_ALUMNO` y crédito `INGRESO_VENTAS` por `totalCentavos`. Se crea `DETALLE_VENTA` con el precio del momento y el aviso `COMPRA_APROBADA` va al outbox en la misma transacción.
+- Asientos al aprobar: débito `ANTICIPO_ALUMNO` y crédito `INGRESO_VENTAS` por `totalCentavos`. Se crea `DETALLE_VENTA` con el precio del momento y el aviso `COMPRA_APROBADA` va al outbox en la misma transacción. Si el saldo cruza el umbral del tutor, también se escribe `SALDO_BAJO` ([notificaciones.md §1](./notificaciones.md#1-evento)).
 - HTTP en `POST /api/pos/cobrar`: `ok: true` responde 200 y `ok: false` responde 422 con el cuerpo tal cual. Las excepciones se mapean con la tabla de errores.
 
 ### `anular`
@@ -166,6 +166,7 @@ function anular(input: {
 - Una transacción de otra cooperativa responde `NO_ENCONTRADA`, para no revelar que existe.
 - `YA_ANULADA` lo garantiza un índice único parcial sobre `transaccion_origen_id` donde `tipo = 'REVERSO'`.
 - El reverso resta del gasto del día, así que libera tope diario.
+- En la misma transacción se escribe en el outbox el aviso `COMPRA_ANULADA`, con origen `reversoId`.
 
 ### `acreditarRecarga`
 
