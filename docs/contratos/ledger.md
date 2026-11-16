@@ -268,8 +268,9 @@ type Movimiento =
       partidas: { producto: string; cantidad: number; precioUnitarioCentavos: Centavos }[];
       anulada: boolean }
   | { tipo: "RECARGA"; transaccionId: string; ocurridoEn: string; montoCentavos: Centavos; metodo: "CODI_QR" | "CODI_PN" | "EFECTIVO" }
+  | { tipo: "ANULACION"; transaccionId: string; compraOriginalId: string; ocurridoEn: string; montoCentavos: Centavos }
   | { tipo: "REEMBOLSO"; transaccionId: string; ocurridoEn: string; montoCentavos: Centavos }
-  | { tipo: "INTENTO_BLOQUEADO"; ocurridoEn: string; productos: string[]; regla: "ALERGENO" | "CATEGORIA" | "TOPE_DIARIO" | "SALDO_INSUFICIENTE" };
+  | { tipo: "INTENTO_BLOQUEADO"; ocurridoEn: string; productos: string[]; motivo: "PRODUCTO_BLOQUEADO" | "TOPE_DIARIO" | "SALDO_INSUFICIENTE"; reglas: ("ALERGENO" | "CATEGORIA")[] };
 
 function historial(input: {
   tutorId: string;          // de la sesión de la PWA
@@ -286,6 +287,8 @@ function historial(input: {
 - La primera página obtiene, en una transacción corta REPEATABLE READ, autorización, saldo y movimientos. Materializa una instantánea temporal **en servidor**, acotada al rango, que vence a los 5 minutos; no mantiene una transacción SQL entre peticiones. Incluye valores proyectados, no solo ids, para que anulaciones o cambios posteriores no alteren páginas ya iniciadas. Orden total `(ocurridoEn DESC, fuente DESC, id DESC)`, con fuente TRANSACCION o AUDITORIA_RECHAZO para evitar colisiones entre tablas.
 - Cursor opaco autenticado: versión, id de instantánea, última tupla, tutor, alumno, cooperativa, rango y vencimiento; nunca basta decodificar base64 ni confiar en datos aportados por el cliente. Cada página reautoriza el vínculo actual antes de leer la instantánea; cambiar ámbito/rango o manipular cursor da ErrorEntrada sin datos. Snapshot ausente/vencido exige reiniciar la consulta. Descartar snapshots al vencer, protegerlos como datos privados, no registrarlos en logs. Persistencia temporal compartida entre instancias a definir en #6, sin caché pública.
 - Las inserciones posteriores (incluso rechazos persistidos tarde con fecha anterior) aparecen al refrescar, no se mezclan con esa instantánea: la garantía de no omitir/duplicar aplica a sus filas. `saldoCentavos` es el saldo de `consultadoEn`, no saldo en vivo entre páginas; la PWA muestra esa hora y refresca con una consulta nueva o `saldo` autorizado.
+- ANULACION es el reverso inmutable, con su fecha propia y referencia a la compra, aunque esta quede fuera del rango. La marca anulada de COMPRA es informativa al momento de la instantánea; al resumir, restar el movimiento ANULACION una sola vez, no restar otra vez por esa marca.
+- Solo proyectar rechazos PRODUCTO_BLOQUEADO, TOPE_DIARIO y SALDO_INSUFICIENTE atribuibles al alumno autorizado; reglas admite ambos tipos o lista vacía para saldo/tope. Otros motivos quedan en auditoría operativa. No mostrar rechazos cuya intención ya esté CONFIRMADA al capturar la instantánea: conserva el hecho para auditoría/conteo sin presentar una compra exitosa como bloqueada. Un éxito posterior aparece al refrescar; la UI etiqueta estos elementos como intentos históricos, nunca como estado actual del cobro.
 - Los productos se devuelven con su nombre comercial. Nunca se devuelven códigos de alérgeno, otros alumnos ni datos del operador. Un `INTENTO_BLOQUEADO` sale de `auditoria_rechazo` (§4); `CREDENCIAL_INVALIDA` no aparece porque no se sabe de quién es el token.
 - La PWA calcula "saldo bajo" comparando `saldoCentavos` contra el umbral que guarda el tutor. No hay un evento para eso.
 
@@ -343,6 +346,8 @@ Prueba C2: cron antes/después del webhook, pago antes y exactamente en expira_e
 Prueba P1: suplantar tutor por parámetro, cruzar cooperativas, consultar saldo de un hermano no vinculado y revocar el vínculo entre páginas: 403 sin movimientos ni saldo. ADMIN inactivo o de otra cooperativa: 403. Ningún historial queda en caché de otro usuario.
 
 Prueba P2: timestamps iguales e ids iguales en tablas distintas mantienen orden total; manipular cursor o reutilizarlo para otro tutor/alumno/rango falla sin datos; snapshot vencido no reanuda otra vista silenciosamente. Comparar todas las páginas con el conjunto capturado inicialmente.
+
+Prueba P3: compra fuera del rango y reverso dentro muestran ANULACION y total neto correcto; compra más reverso dentro no resta dos veces. Rechazo seguido de confirmación no aparece como compra bloqueada al refrescar; múltiples tipos de regla no exponen códigos de alérgeno. C1 de avisos externos ya no aplica; esta prueba cubre su equivalente visual en la PWA.
 
 ## Preguntas abiertas
 
