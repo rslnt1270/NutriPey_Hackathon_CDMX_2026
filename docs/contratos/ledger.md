@@ -58,7 +58,7 @@ La vinculación llave↔entrada vive en una tabla propia, `intento_operacion`, q
 1. **Alta**, en su propia transacción corta y antes de la del dinero: `INSERT ... ON CONFLICT DO NOTHING` y luego se lee la fila. Si el hash no coincide, 409. Esta fila **sobrevive** a cualquier rollback posterior.
 2. **Operación:** la transacción del dinero bloquea primero la fila de intención (`FOR UPDATE`), y después la cuenta. Dos solicitudes simultáneas con la misma llave quedan en serie: la segunda ve `CONFIRMADA` y devuelve el resultado, o ve `RECHAZADA`/`EN_CURSO` y reevalúa.
 3. **Éxito:** en la misma transacción del dinero se marca `CONFIRMADA` con `resultado` y `transaccion_id`.
-4. **Rechazo:** rollback del dinero y, en otra transacción, `RECHAZADA` más `evaluaciones + 1`, `ultimo_motivo`, auditoría y outbox (sección 4).
+4. **Rechazo:** rollback del dinero y, en otra transacción, bloquear y releer la intención antes de persistir auditoría/outbox (sección 4). `CONFIRMADA` es absorbente: ningún rechazo tardío modifica su estado, resultado o transacción. Solo si no está confirmada se permite la transición condicional a `RECHAZADA`; el bloqueo se conserva hasta el commit. El rechazo histórico se registra con su instante de evaluación, aunque otra solicitud ya haya confirmado, sin presentarlo como estado actual. Si al releer ya está `CONFIRMADA`, devolver su resultado original tras persistir el hecho histórico; de lo contrario, devolver el rechazo. El contador y último motivo son metadatos de evaluación, nunca criterios para invalidar un éxito.
 5. La vinculación llave↔hash es **permanente**, aunque la ejecución se haya abortado por completo. Una llave nunca se reutiliza con otra entrada.
 
 **Entrada canónica:** JSON con las claves en orden alfabético, sin espacios, con `operacion` y `cooperativaId` incluidos. En `cobrar` entra `sha256(tokenCredencial)` y no el token crudo, y las partidas se ordenan por `productoId`. `operadorId` **no** entra en el hash (otro cajero puede reintentar la venta), pero se autoriza en cada llamada.
@@ -263,7 +263,7 @@ function saldo(input: { cooperativaId: string; estudianteId: string }): Promise<
 Cubre M5 de la revisión del PR #18.
 
 1. Un rechazo de negocio hace `ROLLBACK` de la transacción del cobro. No deja asientos, `TRANSACCION` ni `DETALLE_VENTA`.
-2. Después, en **otra** transacción, se actualiza `intento_operacion` (sección 1) y se escriben la auditoría y, si aplica, el aviso.
+2. Después, en **otra** transacción, se bloquea y relee `intento_operacion` y se aplica la transición condicional de sección 1; se escriben atómicamente auditoría y, si aplica, aviso histórico. No sobrescribir `CONFIRMADA`. El aviso conserva el momento del rechazo, no afirma que la compra siga rechazada al entregarse.
 3. **Identidad del rechazo:** `(intento_operacion.id, motivo)`. `intento_operacion.id` es un UUID del servidor ya acotado por cooperativa y operación, así que dos cooperativas con la misma llave del cliente nunca colisionan.
    - **Auditoría:** `UNIQUE (intento_id, motivo)`. No incluye destinatario ni columnas nulas, así que un rechazo sin tutor (`CREDENCIAL_INVALIDA`) tampoco se duplica. La auditoría no depende de que exista un destinatario elegible.
    - **Outbox:** una fila por destinatario elegible, con `UNIQUE (intento_id, motivo, destinatario_id)`, donde `destinatario_id` nunca es nulo (si no hay destinatario, no hay fila). `eventId` se deriva de la misma identidad ([notificaciones.md §2](./notificaciones.md#2-identidad-y-deduplicación)).
@@ -286,6 +286,8 @@ Cubre M5 de la revisión del PR #18.
 ## 6. Pruebas que exige el contrato
 
 Corren contra PostgreSQL real (skill `ledger-change`): concurrencia 20/5, triple reintento con la misma llave, llave con otra entrada que da 409, sobregiro sin asientos, partidas que cuadran, reconstrucción de saldos, reverso que restaura saldo y tope, ventana de 120 s, reintento tras un rechazo sin duplicar el aviso, fallo inyectado en la auditoría del rechazo que da 503, montos `1.5`, `-1`, `2^53` y `"100"` que dan 400. Además: K/P1 rechazada seguida de K/P2 da 409, también después de un fallo de auditoría; dos solicitudes simultáneas con la misma llave dan un solo efecto; operador revocado da 403 al reproducir; misma llave con motivo nuevo produce otra auditoría y misma llave con el mismo motivo no; dos cooperativas con la misma llave no colisionan; respuesta perdida después del `COMMIT` (en éxito y en rechazo) se recupera con la misma llave sin un segundo efecto; evidencia con el `bankAccountId` de otra cooperativa nunca acredita, por webhook ni por conciliador; segundo pago al mismo QR da `PAGO_ADICIONAL`; efectivo de un operador de otra cooperativa da 403.
+
+Prueba A5: A rechaza K y libera el lock; B aprueba K y confirma; A persiste su rechazo; C reintenta K. Debe existir un solo cobro, estado CONFIRMADA estable y el mismo resultado para A/C; la auditoría histórica se conserva sin duplicarse.
 
 ## Preguntas abiertas
 
