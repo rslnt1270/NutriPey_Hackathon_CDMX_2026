@@ -200,7 +200,7 @@ erDiagram
         uuid intento_id FK "UNIQUE con motivo"
         uuid estudiante_id FK "Nulo en CREDENCIAL_INVALIDA"
         string motivo
-        string regla "ALERGENO | CATEGORIA | nulo"
+        string_arr reglas "ALERGENO y/o CATEGORIA; vacio para otros motivos"
         uuid_arr productos "A retirar; sin codigos de alergeno"
         timestamptz ocurrido_en
     }

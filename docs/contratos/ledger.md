@@ -301,11 +301,11 @@ function estadoLimiteCuenta(input: { operadorId: string; cooperativaId: string }
   limiteCentavos: Centavos | null;      // null si la cuenta no tiene tope
   efectivoCentavos: Centavos;
   limiteEfectivoCentavos: Centavos | null;
-  porcentaje: number;                   // entero 0–100+, redondeado hacia abajo
+  porcentaje: number | null;            // entero 0–100+; null si limiteCentavos es null
 }>;
 ```
 
-- Operador tomado de la sesión autenticada; el ledger comprueba en la consulta que siga activo y tenga rol `ADMIN` de esa cooperativa. ErrorNoAutorizado en caso contrario. El panel resalta el 80 % y el 100 %; el bloqueo al 100 % lo aplica #26 al crear cobros CoDi. No se manda ningún mensaje.
+- Operador tomado de la sesión autenticada; el ledger comprueba en la consulta que siga activo y tenga rol `ADMIN` de esa cooperativa. ErrorNoAutorizado en caso contrario. Los límites no nulos deben ser enteros positivos; una configuración cero/inválida da ErrorInterno, nunca división por cero. porcentaje se calcula con aritmética entera (abonado × 100 / límite, piso) y null significa sin límite. El panel resalta el 80 % y el 100 %; el bloqueo al 100 % lo aplica #26 al crear cobros CoDi. No se manda ningún mensaje.
 
 ---
 
@@ -316,7 +316,7 @@ Cubre M5 de la revisión del PR #18. No hay outbox ni avisos: el rechazo queda e
 1. Un rechazo de negocio hace `ROLLBACK` de la transacción del cobro. No deja asientos, `TRANSACCION` ni `DETALLE_VENTA`.
 2. Después, en **otra** transacción, se bloquea y relee `intento_operacion`, se aplica la transición condicional de §1 y se escriben la fila de `auditoria_rechazo` y el conteo agregado de RF-18. `CONFIRMADA` nunca se sobrescribe.
 3. **Identidad del rechazo:** `(intento_operacion.id, motivo)`, con `UNIQUE (intento_id, motivo)` e inserción `ON CONFLICT DO NOTHING`. `intento_operacion.id` es un UUID del servidor ya acotado por cooperativa y operación, así que dos cooperativas con la misma llave del cliente nunca colisionan. Si la misma llave se reevalúa con el mismo motivo, no se duplica; con un motivo distinto, es un hecho nuevo.
-4. `auditoria_rechazo` guarda `estudiante_id` (nulo en `CREDENCIAL_INVALIDA`), motivo, tipo de regla, ids de los productos a retirar e instante. **No** guarda códigos de alérgeno ni el token crudo.
+4. `auditoria_rechazo` guarda `estudiante_id` (nulo en `CREDENCIAL_INVALIDA`), motivo, lista de tipos de regla (ALERGENO/CATEGORIA, vacía cuando no aplica), ids de los productos a retirar e instante. **No** guarda códigos de alérgeno ni el token crudo.
 5. Si falla esa segunda transacción, `cobrar` lanza `ErrorReintentable`, porque la auditoría alimenta RF-18 y el historial del tutor. El POS reintenta con la misma llave.
 
 ## 5. Tabla de errores HTTP
