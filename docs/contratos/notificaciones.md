@@ -91,8 +91,9 @@ Base: `/api/interno/notificaciones/`. Solo se expone dentro de la red privada o 
 ```
 
 - `limite` va de 1 a 50 y `leaseSegundos` de 30 a 300.
-- Se reclama con `SELECT ... FOR UPDATE SKIP LOCKED` entre los eventos con estado `PENDIENTE` y `proximo_intento <= now()`, o `RECLAMADO` con el lease vencido. Cada reclamo sube `intentos` y genera un `leaseId` nuevo.
-- Dos instancias de n8n nunca reciben el mismo evento con un lease vigente.
+- Solo se reclaman eventos `PENDIENTE` con `proximo_intento <= now()`, usando `SELECT ... FOR UPDATE SKIP LOCKED`. Cada reclamo suma 1 a `intentos` y genera un `leaseId` nuevo; `intento` en la respuesta es ese contador.
+- Un evento `RECLAMADO` con el lease vencido **nunca se reasigna**. Si el worker cayó después de que el proveedor aceptara el mensaje, no hay forma de saberlo. Un barrido (en cada `reclamar` y por cron) lo mueve a `INCIERTO`. Así ningún evento se reenvía automáticamente con un resultado desconocido, y un worker antiguo que siga vivo no compite con otro.
+- Límite total: **5 reclamos** por evento. Al reclamar el quinto sin éxito, el evento pasa a `REVISION_MANUAL` y no se vuelve a entregar.
 
 ### `POST {eventId}/confirmar`
 
@@ -100,32 +101,45 @@ Base: `/api/interno/notificaciones/`. Solo se expone dentro de la red privada o 
 { "leaseId": "uuid", "proveedorMensajeId": "string" }
 ```
 
-- 200: el evento pasa a `ENVIADA` (el proveedor aceptó el mensaje, lo que no prueba que haya llegado al teléfono).
-- Repetir con el mismo `leaseId` y el mismo `proveedorMensajeId` responde 200 con el mismo cuerpo (idempotente).
-- Un `leaseId` vencido o reemplazado responde 409. Aun así se guarda `proveedorMensajeId` como posible duplicado, para auditarlo.
+Precedencia:
+
+1. Si el evento ya está `ENVIADA` con el mismo `proveedorMensajeId`, responde 200 con el mismo cuerpo (idempotente).
+2. Si está `ENVIADA` con otro `proveedorMensajeId`, responde 409 y guarda el id como **duplicado confirmado**, para auditoría.
+3. Si está `RECLAMADO` con ese `leaseId` (vigente o vencido) o `INCIERTO` por ese `leaseId`, pasa a `ENVIADA`. Una confirmación tardía es evidencia de envío y gana sobre el vencimiento.
+4. Con un `leaseId` desconocido o de otro evento responde 409, sin cambios.
+
+`ENVIADA` solo significa que el proveedor aceptó el mensaje; no prueba que haya llegado al teléfono.
 
 ### `POST {eventId}/fallar`
 
 ```json
-{ "leaseId": "uuid", "codigo": "TIMEOUT" | "RECHAZADO_PROVEEDOR" | "DESTINO_INVALIDO" | "OTRO", "reintentable": true }
+{ "leaseId": "uuid", "fase": "ANTES_DE_ENVIAR" | "RECHAZADO_PROVEEDOR" | "RESULTADO_DESCONOCIDO", "codigo": "TIMEOUT" | "DESTINO_INVALIDO" | "LIMITE_PROVEEDOR" | "OTRO" }
 ```
 
-- Con `reintentable: true` vuelve a `PENDIENTE` con backoff exponencial (`30 s · 2^(intentos-1)`, máximo 1 h).
-- Con `reintentable: false`, o al llegar a **5 intentos**, el evento pasa a `REVISION_MANUAL`.
-- `TIMEOUT` después de haber enviado al proveedor se registra como `INCIERTO` y no se reintenta solo.
-- Es idempotente por `(eventId, leaseId)`. Un lease vencido responde 409.
+| `fase` | Significado | Efecto |
+| :--- | :--- | :--- |
+| `ANTES_DE_ENVIAR` | n8n no llegó a llamar al proveedor | `PENDIENTE` con backoff `30 s · 2^(intentos-1)`, máximo 1 h |
+| `RECHAZADO_PROVEEDOR` | el proveedor respondió con un error definitivo | `DESTINO_INVALIDO` → `REVISION_MANUAL`; los demás, igual que `ANTES_DE_ENVIAR` |
+| `RESULTADO_DESCONOCIDO` | timeout o caída después de llamar al proveedor | `INCIERTO` |
+
+- Es idempotente por `(eventId, leaseId)`. Un `leaseId` que no es el último del evento responde 409.
+
+### `INCIERTO`
+
+- No se reintenta automáticamente, porque Telegram y WhatsApp no ofrecen una llave de idempotencia que garantice que no habrá duplicado.
+- Aparece en la vista de operación (#13) y una persona decide si **reencolar** (vuelve a `PENDIENTE`, sin pasar del límite de 5) o **cerrar**. Si más adelante un proveedor permite consultar por `eventId`, #13 puede resolverlo automáticamente; eso necesitaría una v2 de este contrato.
 
 ### Estados
 
-`PENDIENTE → RECLAMADO → ENVIADA | PENDIENTE (reintento) | REVISION_MANUAL | INCIERTO`, más `DESCARTADO` desde `PENDIENTE` o `RECLAMADO`. Ningún estado final se reabre desde la API.
+`PENDIENTE → RECLAMADO → ENVIADA | PENDIENTE | INCIERTO | REVISION_MANUAL`; `INCIERTO → ENVIADA` (por confirmación tardía) `| PENDIENTE` (reencolado manual) `| CERRADO`. `DESCARTADO` puede venir de `PENDIENTE` o `RECLAMADO`. `ENVIADA`, `REVISION_MANUAL`, `DESCARTADO` y `CERRADO` son finales.
 
 ## 5. Cambios al modelo (migración nueva en #13)
 
-El outbox v1.1 se amplía **por migración nueva**, sin editar las fusionadas: `event_id` único, `tipo`, `intento_id` nulo (rechazos), `transaccion_id` nulo, `canal`, `alumno_alias`, `lease_id`, `lease_vence_en`, `proveedor_mensaje_id`, `resultado`, `proximo_intento`, `enviado_en`, y un estado con los valores de §4. El destino verificado vive en una tabla de destinos del tutor, no en `variables`.
+El outbox v1.1 se amplía **por migración nueva**, sin editar las fusionadas: `event_id` único, `tipo`, `intento_id` nulo (rechazos), `transaccion_id` nulo, `canal`, `alumno_alias`, `lease_id`, `lease_vence_en`, `proveedor_mensaje_id`, `duplicados_confirmados`, `fase_fallo`, `resultado`, `proximo_intento`, `enviado_en`, y un estado con los valores de §4. El destino verificado vive en una tabla de destinos del tutor, no en `variables`.
 
 ## 6. Pruebas que exige el contrato
 
-Token inválido da 401. Dos reclamos concurrentes sin solapamiento. Lease vencido reasignado y confirmación tardía que da 409. Confirmación repetida idempotente. Cinco fallos que llevan a `REVISION_MANUAL`. Consentimiento revocado entre la escritura y el reclamo que lleva a `DESCARTADO`. Hermanos con alias distintos y sin cruce entre tutores. Payloads sin nombre, iniciales ni alergias (aserción sobre el JSON completo).
+Token inválido da 401. Dos reclamos concurrentes sin solapamiento. Caída del worker después de que el proveedor acepta y antes de confirmar: el evento pasa a `INCIERTO` sin reenvío. Confirmación tardía de un lease vencido: `ENVIADA`. Confirmación duplicada con otro id: 409 y duplicado auditado. Cinco reclamos sin éxito: `REVISION_MANUAL`. `RESULTADO_DESCONOCIDO`: `INCIERTO`. Consentimiento revocado entre la escritura y el reclamo que lleva a `DESCARTADO`. Hermanos con alias distintos y sin cruce entre tutores. Payloads sin nombre, iniciales ni alergias (aserción sobre el JSON completo).
 
 ## Preguntas abiertas
 
