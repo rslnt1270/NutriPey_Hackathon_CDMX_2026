@@ -230,10 +230,13 @@ function saldo(input: { cooperativaId: string; estudianteId: string }): Promise<
 Cubre M5 de la revisión del PR #18.
 
 1. Un rechazo de negocio hace `ROLLBACK` de la transacción del cobro. No deja asientos, `TRANSACCION` ni `DETALLE_VENTA`.
-2. Después, en **otra** transacción, se insertan `AUDIT_LOG` (motivo y, en `PRODUCTO_BLOQUEADO`, el tipo de regla para el reporte agregado RF-18) y, si aplica, el aviso `COMPRA_BLOQUEADA` en el outbox, con `transaccion_id` nulo y `intento_id = idempotencyKey`.
-3. Las dos inserciones se deduplican con un índice único `(intento_id, motivo, tutor_id)`. Un reintento con la misma llave no duplica ni la auditoría ni el aviso.
+2. Después, en **otra** transacción, se actualiza `intento_operacion` (sección 1) y se escriben la auditoría y, si aplica, el aviso.
+3. **Identidad del rechazo:** `(intento_operacion.id, motivo)`. `intento_operacion.id` es un UUID del servidor ya acotado por cooperativa y operación, así que dos cooperativas con la misma llave del cliente nunca colisionan.
+   - **Auditoría:** `UNIQUE (intento_id, motivo)`. No incluye destinatario ni columnas nulas, así que un rechazo sin tutor (`CREDENCIAL_INVALIDA`) tampoco se duplica. La auditoría no depende de que exista un destinatario elegible.
+   - **Outbox:** una fila por destinatario elegible, con `UNIQUE (intento_id, motivo, destinatario_id)`, donde `destinatario_id` nunca es nulo (si no hay destinatario, no hay fila). `eventId` se deriva de la misma identidad ([notificaciones.md §2](./notificaciones.md#2-identidad-y-deduplicación)).
+   - **Política:** si la misma llave se reevalúa con **el mismo motivo**, es el mismo hecho y no se duplica. Con un **motivo distinto**, es un hecho nuevo: otra fila de auditoría y otro aviso. Todo se inserta con `ON CONFLICT DO NOTHING`, así que un conflicto nunca produce 503.
 4. Si falla esa segunda transacción, `cobrar` lanza `ErrorReintentable` y nunca devuelve `ok: false` como si el aviso estuviera encolado. El POS reintenta con la misma llave.
-5. `CREDENCIAL_INVALIDA` no genera aviso al tutor porque no se sabe a quién pertenece el token. Solo genera auditoría sin token crudo.
+5. `CREDENCIAL_INVALIDA` no genera aviso al tutor porque no se sabe a quién pertenece el token. Solo genera auditoría, sin token crudo.
 
 ## 5. Tabla de errores HTTP
 

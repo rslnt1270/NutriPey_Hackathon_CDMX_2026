@@ -46,10 +46,23 @@ Privacidad (L6 de la revisión del PR #18, documento 04 §4):
 
 ## 2. Identidad y deduplicación
 
-- Se genera **un evento por destinatario autorizado**.
-- `eventId = UUIDv5(NS_NUTRIPEY, origen + ":" + tipo + ":" + tutorId)`, donde `origen` es `transaccionId` o, en los rechazos, el `idempotencyKey` del intento. El mismo hecho siempre produce el mismo `eventId`.
-- El outbox tiene `UNIQUE (event_id)`, así que insertar dos veces no duplica.
-- n8n debe tratar `eventId` como llave de idempotencia ante el proveedor cuando el proveedor lo permita. Si no lo permite, un timeout después del envío puede duplicar el aviso; ese caso queda como `INCIERTO` (§4).
+- Se genera **un evento por destinatario autorizado**. La auditoría del hecho es una sola fila, aparte de los eventos ([ledger.md §4](./ledger.md#4-rechazos-de-cobro-auditoría-y-aviso)).
+- La fórmula es fija, para que dos implementaciones produzcan el mismo valor:
+
+```text
+NS_NUTRIPEY = 67161562-f75d-4611-902e-b76f8b466b3c
+nombre      = "v1|" + tipo + "|" + origen + "|" + destinatarioId
+eventId     = UUIDv5(NS_NUTRIPEY, utf8(nombre))
+```
+
+| Tipo | `origen` |
+| :--- | :--- |
+| `RECARGA_ACREDITADA`, `COMPRA_APROBADA` | `transaccionId` |
+| `COMPRA_BLOQUEADA` | `intento_operacion.id + "|" + motivo` (la misma identidad del rechazo que usa la auditoría) |
+
+- Cada componente es un UUID o un enum en mayúsculas, sin `|`, así que la concatenación no es ambigua. `destinatarioId` es el UUID del tutor u operador, nunca el teléfono ni el `chat_id`.
+- El outbox tiene `UNIQUE (event_id)` y se inserta con `ON CONFLICT DO NOTHING`.
+- `eventId` se envía al proveedor como llave de idempotencia **solo si el proveedor la soporta**; si no, este contrato no promete deduplicación ante el proveedor (§4, `INCIERTO`).
 
 ## 3. Elegibilidad del destinatario
 
