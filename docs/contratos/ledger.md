@@ -20,7 +20,7 @@ type Centavos = number;
 ```
 
 - En TypeScript, un monto es válido solo si `Number.isSafeInteger(x) && x >= 0`. Los montos de una operación (`montoCentavos`, total de una venta) además deben ser `> 0`.
-- Tope por operación: `MAX_MONTO_OPERACION_CENTAVOS = 1_000_000` ($10,000.00). Lo que exceda ese tope se rechaza como `ErrorEntrada` antes de abrir la transacción. Ningún saldo se acerca a 2^53, así que `number` alcanza sin perder precisión.
+- Tope por operación: `MAX_MONTO_OPERACION_CENTAVOS = 1_000_000` ($10,000.00). Los montos que **manda quien llama** (recarga en efectivo, reembolso) se validan antes de abrir la transacción y, si exceden el tope, dan `ErrorEntrada`. El total de `cobrar` depende de precios que se leen con la cuenta bloqueada, así que se comprueba **dentro** de la transacción, después de la evaluación (`reglas.md` §3, #28). Si lo excede, el resultado es `TOTAL_EXCEDE_LIMITE`, con rollback y sin asientos. Antes de la transacción solo se validan el formato y las cantidades. Ningún saldo se acerca a 2^53, así que `number` alcanza sin perder precisión.
 - En SQL se usa `bigint`. El driver `pg` devuelve `bigint` como string; la capa del ledger lo convierte con `BigInt`, comprueba que esté en el rango seguro y solo entonces lo devuelve como `number`. Si queda fuera de rango lanza `ErrorInterno`; nunca redondea.
 - En JSON viaja un entero (`1250`). Los strings con decimales o notación científica se rechazan.
 - Solo los bordes convierten a pesos: el cliente pey (que usa `amount` en pesos según su OpenAPI) y la pantalla. Los dos convierten con aritmética entera y tienen pruebas.
@@ -96,7 +96,8 @@ type MotivoRechazoCobro =
   | "PRODUCTO_NO_DISPONIBLE"  // no existe, no publicable o no disponible
   | "PRODUCTO_BLOQUEADO"      // regla del tutor (alérgeno o categoría)
   | "TOPE_DIARIO"
-  | "SALDO_INSUFICIENTE";
+  | "SALDO_INSUFICIENTE"
+  | "TOTAL_EXCEDE_LIMITE";    // total calculado con precios del servidor > MAX_MONTO_OPERACION_CENTAVOS
 
 type ItemVenta = { productoId: string; cantidad: number };
 
