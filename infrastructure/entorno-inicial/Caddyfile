@@ -1,0 +1,10 @@
+{$INTEGRATION_DOMAIN} {
+	# No habilitar access logs: URLs/cabeceras pueden contener datos sensibles.
+	@integration path /api/health /api/webhooks/pey
+	handle @integration {
+		reverse_proxy app:3000
+	}
+	handle {
+		respond 404
+	}
+}
