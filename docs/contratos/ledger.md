@@ -4,9 +4,9 @@
 **Dueño:** carril Pagos. **Consumidores:** carril Campus, webhook pey, conciliador y caja.
 **Ubicación del código:** `src/server/ledger/index.ts`.
 
-Fuera de Pagos, nadie escribe SQL sobre `cuenta_ledger`, `transaccion`, `asiento_contable`, `detalle_venta` ni `notificacion_outbox`; solo se usan estas funciones. Para cambiar una firma hace falta un PR propio a este archivo que suba la versión.
+Fuera de Pagos, nadie escribe SQL sobre `cuenta_ledger`, `transaccion`, `asiento_contable`, `detalle_venta` ni `auditoria_rechazo`; solo se usan estas funciones. Para cambiar una firma hace falta un PR propio a este archivo que suba la versión.
 
-La integración con las reglas de Campus dentro de `cobrar` se define en `reglas.md` (#28, PR propio). Los avisos que generan estas funciones se definen en [notificaciones.md](./notificaciones.md).
+La integración con las reglas de Campus dentro de `cobrar` se define en `reglas.md` (#28, PR propio). NutriPey no envía mensajes externos (WhatsApp, Telegram ni correo): el tutor consulta los movimientos en la PWA de padres con `historial` y `saldo`, y la escuela consulta el límite de su cuenta con `estadoLimiteCuenta` (§3).
 
 ---
 
@@ -48,7 +48,7 @@ La vinculación llave↔entrada vive en una tabla propia, `intento_operacion`, q
 
 | Columna | Uso |
 | :--- | :--- |
-| `id` | UUID generado por el servidor; es la identidad canónica de la intención (la usan auditoría y outbox) |
+| `id` | UUID generado por el servidor; es la identidad canónica de la intención (la usa la auditoría de rechazos) |
 | `cooperativa_id`, `operacion`, `llave` | `UNIQUE (cooperativa_id, operacion, llave)` |
 | `hash_entrada` | SHA-256 de la entrada canónica |
 | `estado` | `EN_CURSO` → `CONFIRMADA` \| `RECHAZADA` (`RECHAZADA` puede volver a `EN_CURSO` al reevaluar) |
@@ -58,7 +58,7 @@ La vinculación llave↔entrada vive en una tabla propia, `intento_operacion`, q
 1. **Alta**, en su propia transacción corta y antes de la del dinero: `INSERT ... ON CONFLICT DO NOTHING` y luego se lee la fila. Si el hash no coincide, 409. Esta fila **sobrevive** a cualquier rollback posterior.
 2. **Operación:** la transacción del dinero bloquea primero la fila de intención (`FOR UPDATE`), y después la cuenta. Dos solicitudes simultáneas con la misma llave quedan en serie: la segunda ve `CONFIRMADA` y devuelve el resultado, o ve `RECHAZADA`/`EN_CURSO` y reevalúa.
 3. **Éxito:** en la misma transacción del dinero se marca `CONFIRMADA` con `resultado` y `transaccion_id`.
-4. **Rechazo:** rollback del dinero y, en otra transacción, bloquear y releer la intención antes de persistir auditoría/outbox (sección 4). `CONFIRMADA` es absorbente: ningún rechazo tardío modifica su estado, resultado o transacción. Solo si no está confirmada se permite la transición condicional a `RECHAZADA`; el bloqueo se conserva hasta el commit. Si otra solicitud ya confirmó, conservar el rechazo histórico solo en auditoría y su conteo deduplicado, con su instante de evaluación: **no crear COMPRA_BLOQUEADA en el outbox**. El aviso solo puede insertarse si esta misma transacción realizó la transición condicional a RECHAZADA. Si al releer ya está `CONFIRMADA`, devolver su resultado original tras persistir el hecho histórico; de lo contrario, devolver el rechazo. El contador y último motivo son metadatos de evaluación, nunca criterios para invalidar un éxito.
+4. **Rechazo:** rollback del dinero y, en otra transacción, bloquear y releer la intención antes de persistir la auditoría (sección 4). `CONFIRMADA` es absorbente: ningún rechazo tardío modifica su estado, resultado o transacción. Solo si no está confirmada se permite la transición condicional a `RECHAZADA`; el bloqueo se conserva hasta el commit. Si otra solicitud ya confirmó, el rechazo histórico se conserva en auditoría y en su conteo deduplicado, con su instante de evaluación. Si al releer ya está `CONFIRMADA`, devolver su resultado original tras persistir el hecho histórico; de lo contrario, devolver el rechazo. El contador y último motivo son metadatos de evaluación, nunca criterios para invalidar un éxito.
 5. La vinculación llave↔hash es **permanente**, aunque la ejecución se haya abortado por completo. Una llave nunca se reutiliza con otra entrada.
 
 **Entrada canónica:** JSON con las claves en orden alfabético, sin espacios, con `operacion` y `cooperativaId` incluidos. En `cobrar` entra `sha256(tokenCredencial)` y no el token crudo, y las partidas se ordenan por `productoId`. `operadorId` **no** entra en el hash (otro cajero puede reintentar la venta), pero se autoriza en cada llamada.
@@ -144,7 +144,7 @@ function cobrar(input: {
 ```
 
 - `tokenCredencial` llega crudo y se resuelve dentro de la transacción por `token_hash`. En NTAG 424 la verificación SDM y el avance del contador se hacen en esa misma transacción (si el contador se repite o retrocede, `CREDENCIAL_INVALIDA`). El verificador criptográfico vive en `src/lib/nfc/` como función pura que no toca la BD.
-- Asientos al aprobar: débito `ANTICIPO_ALUMNO` y crédito `INGRESO_VENTAS` por `totalCentavos`. Se crea `DETALLE_VENTA` con el precio del momento y el aviso `COMPRA_APROBADA` va al outbox en la misma transacción. Si el saldo cruza el umbral del tutor, también se escribe `SALDO_BAJO` ([notificaciones.md §1](./notificaciones.md#1-evento)).
+- Asientos al aprobar: débito `ANTICIPO_ALUMNO` y crédito `INGRESO_VENTAS` por `totalCentavos`. Se crea `DETALLE_VENTA` con el precio del momento.
 - HTTP en `POST /api/pos/cobrar`: `ok: true` responde 200 y `ok: false` responde 422 con el cuerpo tal cual. Las excepciones se mapean con la tabla de errores.
 
 ### `anular`
@@ -167,7 +167,6 @@ function anular(input: {
 - Una transacción de otra cooperativa responde `NO_ENCONTRADA`, para no revelar que existe.
 - `YA_ANULADA` lo garantiza un índice único parcial sobre `transaccion_origen_id` donde `tipo = 'REVERSO'`.
 - El reverso resta del gasto del día, así que libera tope diario.
-- En la misma transacción se escribe en el outbox el aviso `COMPRA_ANULADA`, con origen `reversoId`.
 
 ### `acreditarRecarga`
 
@@ -222,7 +221,7 @@ function acreditarRecarga(
 - Sin acreditación previa, CoDi puede acreditar una recarga `PENDIENTE` o `EXPIRADA` si toda la evidencia es válida y `pagadoEn <= expira_en` comparados como instantes UTC (datePaid viene en segundos, no milisegundos). La hora de llegada del webhook no decide la vigencia. `pagadoEn` debe ser un entero seguro no negativo convertido sin desbordamiento; falta o formato inválido nunca autoriza crédito. Un pago posterior a expira_en, una recarga en REVISION u otro estado no admitido requiere `REVISION_MANUAL`. La recarga en efectivo solo admite PENDIENTE no vencida al tomar el lock; no tiene fecha de pey. Los rechazos se registran sin asientos en una incidencia deduplicada por pago; una recarga existente sin acreditar pasa a REVISION. Si la recarga no existe, solo se conserva la incidencia. Repetir la evidencia no borra ni reabre la incidencia; el proceso manual se define aparte.
 - El cron de vencimiento toma `FOR UPDATE` sobre la misma recarga y relee su estado/vínculo: solo PENDIENTE sin acreditación y con expira_en pasado puede pasar a EXPIRADA. Si acreditar ganó primero, el cron no modifica PAGADA; si el cron ganó, acreditar puede recuperar EXPIRADA usando la fecha real del pago.
 - RN-02 **no** bloquea un pago CoDi ya recibido (eso se aplica al crear el cobro en #26). En efectivo sí se rechaza con `LIMITE_EFECTIVO` si se supera el tope mensual de efectivo.
-- Asientos: en CODI, débito `BANCO` y crédito `ANTICIPO_ALUMNO`; en EFECTIVO, débito `CAJA_EFECTIVO` y crédito `ANTICIPO_ALUMNO`. El aviso `RECARGA_ACREDITADA` se escribe en la misma transacción.
+- Asientos: en CODI, débito `BANCO` y crédito `ANTICIPO_ALUMNO`; en EFECTIVO, débito `CAJA_EFECTIVO` y crédito `ANTICIPO_ALUMNO`.
 
 ### `registrarReembolso` (RN-05, #29)
 
@@ -258,20 +257,59 @@ function saldo(input: { cooperativaId: string; estudianteId: string }): Promise<
 }>;
 ```
 
+### `historial` (PWA de padres)
+
+De solo lectura. Es lo que reemplaza a los avisos externos: el tutor revisa al final del día o de la semana qué compró su hijo.
+
+```ts
+type Movimiento =
+  | { tipo: "COMPRA"; transaccionId: string; ocurridoEn: string; totalCentavos: Centavos;
+      partidas: { producto: string; cantidad: number; precioUnitarioCentavos: Centavos }[];
+      anulada: boolean }
+  | { tipo: "RECARGA"; transaccionId: string; ocurridoEn: string; montoCentavos: Centavos; metodo: "CODI_QR" | "CODI_PN" | "EFECTIVO" }
+  | { tipo: "REEMBOLSO"; transaccionId: string; ocurridoEn: string; montoCentavos: Centavos }
+  | { tipo: "INTENTO_BLOQUEADO"; ocurridoEn: string; productos: string[]; regla: "ALERGENO" | "CATEGORIA" | "TOPE_DIARIO" | "SALDO_INSUFICIENTE" };
+
+function historial(input: {
+  tutorId: string;          // de la sesión de la PWA
+  estudianteId: string;
+  desde: string;            // ISO 8601; rango máximo 31 días
+  hasta: string;
+  cursor?: string;          // opaco; páginas de 50
+}): Promise<{ movimientos: Movimiento[]; siguiente: string | null; saldoCentavos: Centavos }>;
+```
+
+- El ledger comprueba dentro de la consulta que exista un vínculo `TUTOR_ESTUDIANTE` vigente. Si no existe, lanza `ErrorNoAutorizado`, aunque la ruta ya lo haya comprobado.
+- El orden es `ocurridoEn` descendente, con `id` como desempate. El cursor codifica `(ocurridoEn, id)`.
+- Los productos se devuelven con su nombre comercial. Nunca se devuelven códigos de alérgeno, otros alumnos ni datos del operador. Un `INTENTO_BLOQUEADO` sale de `auditoria_rechazo` (§4); `CREDENCIAL_INVALIDA` no aparece porque no se sabe de quién es el token.
+- La PWA calcula "saldo bajo" comparando `saldoCentavos` contra el umbral que guarda el tutor. No hay un evento para eso.
+
+### `estadoLimiteCuenta` (RN-02, panel de la escuela)
+
+```ts
+function estadoLimiteCuenta(input: { operadorId: string; cooperativaId: string }): Promise<{
+  mes: string;                          // AAAA-MM, CDMX
+  abonadoCentavos: Centavos;
+  limiteCentavos: Centavos | null;      // null si la cuenta no tiene tope
+  efectivoCentavos: Centavos;
+  limiteEfectivoCentavos: Centavos | null;
+  porcentaje: number;                   // entero 0–100+, redondeado hacia abajo
+}>;
+```
+
+- Solo para operadores `ADMIN` de esa cooperativa. El panel resalta el 80 % y el 100 %; el bloqueo al 100 % lo aplica #26 al crear cobros CoDi. No se manda ningún mensaje.
+
 ---
 
-## 4. Rechazos de cobro: auditoría y aviso
+## 4. Rechazos de cobro: auditoría
 
-Cubre M5 de la revisión del PR #18.
+Cubre M5 de la revisión del PR #18. No hay outbox ni avisos: el rechazo queda en auditoría y el tutor lo ve en `historial`.
 
 1. Un rechazo de negocio hace `ROLLBACK` de la transacción del cobro. No deja asientos, `TRANSACCION` ni `DETALLE_VENTA`.
-2. Después, en **otra** transacción, se bloquea y relee `intento_operacion` y se aplica la transición condicional de sección 1; se escriben atómicamente auditoría y conteo deduplicado. Solo si esta transacción realizó la transición a RECHAZADA se permite crear COMPRA_BLOQUEADA para los destinatarios elegibles. Con CONFIRMADA, no se inserta ese aviso ni se sobrescribe el éxito; se conserva únicamente el hecho auditado.
-3. **Identidad del rechazo:** `(intento_operacion.id, motivo)`. `intento_operacion.id` es un UUID del servidor ya acotado por cooperativa y operación, así que dos cooperativas con la misma llave del cliente nunca colisionan.
-   - **Auditoría:** `UNIQUE (intento_id, motivo)`. No incluye destinatario ni columnas nulas, así que un rechazo sin tutor (`CREDENCIAL_INVALIDA`) tampoco se duplica. La auditoría no depende de que exista un destinatario elegible.
-   - **Outbox:** una fila por destinatario elegible, con `UNIQUE (intento_id, motivo, destinatario_id)`, donde `destinatario_id` nunca es nulo (si no hay destinatario, no hay fila). `eventId` se deriva de la misma identidad ([notificaciones.md §2](./notificaciones.md#2-identidad-y-deduplicación)).
-   - **Política:** si la misma llave se reevalúa con **el mismo motivo**, es el mismo hecho y no se duplica. Con un **motivo distinto**, es un hecho nuevo: otra fila de auditoría y otro aviso. Todo se inserta con `ON CONFLICT DO NOTHING`, así que un conflicto nunca produce 503.
-4. Si falla esa segunda transacción, `cobrar` lanza `ErrorReintentable` y nunca devuelve `ok: false` como si el aviso estuviera encolado. El POS reintenta con la misma llave.
-5. `CREDENCIAL_INVALIDA` no genera aviso al tutor porque no se sabe a quién pertenece el token. Solo genera auditoría, sin token crudo.
+2. Después, en **otra** transacción, se bloquea y relee `intento_operacion`, se aplica la transición condicional de §1 y se escriben la fila de `auditoria_rechazo` y el conteo agregado de RF-18. `CONFIRMADA` nunca se sobrescribe.
+3. **Identidad del rechazo:** `(intento_operacion.id, motivo)`, con `UNIQUE (intento_id, motivo)` e inserción `ON CONFLICT DO NOTHING`. `intento_operacion.id` es un UUID del servidor ya acotado por cooperativa y operación, así que dos cooperativas con la misma llave del cliente nunca colisionan. Si la misma llave se reevalúa con el mismo motivo, no se duplica; con un motivo distinto, es un hecho nuevo.
+4. `auditoria_rechazo` guarda `estudiante_id` (nulo en `CREDENCIAL_INVALIDA`), motivo, tipo de regla, ids de los productos a retirar e instante. **No** guarda códigos de alérgeno ni el token crudo.
+5. Si falla esa segunda transacción, `cobrar` lanza `ErrorReintentable`, porque la auditoría alimenta RF-18 y el historial del tutor. El POS reintenta con la misma llave.
 
 ## 5. Tabla de errores HTTP
 
@@ -287,13 +325,13 @@ Cubre M5 de la revisión del PR #18.
 
 ## 6. Pruebas que exige el contrato
 
-Corren contra PostgreSQL real (skill `ledger-change`): concurrencia 20/5, triple reintento con la misma llave, llave con otra entrada que da 409, sobregiro sin asientos, partidas que cuadran, reconstrucción de saldos, reverso que restaura saldo y tope, ventana de 120 s, reintento tras un rechazo sin duplicar el aviso, fallo inyectado en la auditoría del rechazo que da 503, montos `1.5`, `-1`, `2^53` y `"100"` que dan 400. Además: K/P1 rechazada seguida de K/P2 da 409, también después de un fallo de auditoría; dos solicitudes simultáneas con la misma llave dan un solo efecto; operador revocado da 403 al reproducir; misma llave con motivo nuevo produce otra auditoría y misma llave con el mismo motivo no; dos cooperativas con la misma llave no colisionan; respuesta perdida después del `COMMIT` (en éxito y en rechazo) se recupera con la misma llave sin un segundo efecto; evidencia con el `bankAccountId` de otra cooperativa nunca acredita, por webhook ni por conciliador; segundo pago al mismo QR da `PAGO_ADICIONAL`; efectivo de un operador de otra cooperativa da 403.
+Corren contra PostgreSQL real (skill `ledger-change`): concurrencia 20/5, triple reintento con la misma llave, llave con otra entrada que da 409, sobregiro sin asientos, partidas que cuadran, reconstrucción de saldos, reverso que restaura saldo y tope, ventana de 120 s, reintento tras un rechazo sin duplicar la auditoría, fallo inyectado en la auditoría del rechazo que da 503, montos `1.5`, `-1`, `2^53` y `"100"` que dan 400. Además: K/P1 rechazada seguida de K/P2 da 409, también después de un fallo de auditoría; dos solicitudes simultáneas con la misma llave dan un solo efecto; operador revocado da 403 al reproducir; misma llave con motivo nuevo produce otra auditoría y misma llave con el mismo motivo no; dos cooperativas con la misma llave no colisionan; respuesta perdida después del `COMMIT` (en éxito y en rechazo) se recupera con la misma llave sin un segundo efecto; evidencia con el `bankAccountId` de otra cooperativa nunca acredita, por webhook ni por conciliador; segundo pago al mismo QR da `PAGO_ADICIONAL`; efectivo de un operador de otra cooperativa da 403.
 
 Prueba A5: A rechaza K y libera el lock; B aprueba K y confirma; A persiste su rechazo; C reintenta K. Debe existir un solo cobro, estado CONFIRMADA estable y el mismo resultado para A/C; la auditoría histórica se conserva sin duplicarse.
 
 Prueba A6: P1 acredita; P2 adicional, P2 repetido y P3 nunca crean otro anticipo automático; P1 sigue devolviendo su resultado original. Probar también recarga en REVISION sin vínculo y carrera de dos pagos distintos para una recarga: máximo una acreditación, incidencias deduplicadas.
 
-Prueba C1: A rechaza, B confirma antes de la persistencia de A; al terminar A hay auditoría/conteo únicos pero cero eventos COMPRA_BLOQUEADA por ese rechazo tardío. Sin éxito concurrente, la transición a RECHAZADA y el aviso elegible se confirman juntos; repetir no duplica.
+Prueba de lectura: `historial` con un tutor sin vínculo vigente da 403; un hermano no aparece en el historial del otro; la paginación con cursor no repite ni omite movimientos al insertar uno nuevo durante la lectura; un rango mayor a 31 días da 400; ningún campo de la respuesta contiene códigos de alérgeno. `estadoLimiteCuenta` con un operador no ADMIN da 403; el cambio de mes CDMX reinicia el acumulado.
 
 Prueba C2: cron antes/después del webhook, pago antes y exactamente en expira_en, y entrega demorada: una sola acreditación aunque el estado ya sea EXPIRADA. Pago después del plazo o fecha ausente/inválida: sin acreditación automática, incidencia de revisión. Probar unidades segundos frente a milisegundos. Fuente consultada: [OpenAPI de pey](https://docs.pey.mx/openapi.json), datePaid en GET /transaction/{id} y en la lista de la cuenta.
 
