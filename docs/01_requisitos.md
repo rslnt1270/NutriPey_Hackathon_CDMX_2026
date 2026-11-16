@@ -84,7 +84,7 @@ La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre pe
 
 Decisión del 16 noviembre: NutriPey no envía mensajes por WhatsApp, Telegram ni correo. El tutor revisa en la PWA lo que compró su hijo, por ejemplo al final del día o de la semana.
 
-- **RF-19 (Historial):** por cada alumno vinculado, la PWA muestra compras (productos, cantidades y total), recargas, anulaciones, reembolsos e intentos bloqueados (producto y tipo de regla, sin motivo médico), junto con el saldo actual obtenido por una lectura autorizada; las páginas de historial indican su instante de consulta y conservan esa instantánea hasta refrescar. Se lee con `historial` y `saldo` del [contrato del ledger](./contratos/ledger.md).
+- **RF-19 (Historial):** por cada alumno vinculado, la PWA muestra compras (productos, cantidades y total), recargas, anulaciones, reembolsos e intentos bloqueados (producto y tipo de regla, sin motivo médico), junto con el saldo actual obtenido por una lectura autorizada; cada consulta devuelve el rango completo (máximo 31 días y 500 movimientos) con su instante de consulta; los cambios posteriores aparecen al refrescar. Se lee con `historial` y `saldo` del [contrato del ledger](./contratos/ledger.md).
 - **RF-20 (Resumen en la app):** la PWA agrupa por día y por semana (total gastado, productos e intentos bloqueados) y resalta el saldo cuando queda por debajo del umbral que fija el tutor.
 - **RF-21 (Retirado el 16 nov):** envío desacoplado por outbox y n8n.
 
