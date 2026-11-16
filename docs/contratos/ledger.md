@@ -6,7 +6,7 @@
 
 Fuera de Pagos, nadie escribe SQL sobre `cuenta_ledger`, `transaccion`, `asiento_contable`, `detalle_venta` ni `auditoria_rechazo`; solo se usan estas funciones. Para cambiar una firma hace falta un PR propio a este archivo que suba la versión.
 
-La integración con las reglas de Campus dentro de `cobrar` se define en `reglas.md` (#28, PR propio). NutriPey no envía mensajes externos (WhatsApp, Telegram ni correo): el tutor consulta los movimientos en la PWA de padres con `historial` y `saldo`, y la escuela consulta el límite de su cuenta con `estadoLimiteCuenta` (§3).
+La integración con las reglas de Campus dentro de `cobrar` se define en [reglas.md](./reglas.md). NutriPey no envía mensajes externos (WhatsApp, Telegram ni correo): el tutor consulta los movimientos en la PWA de padres con `historial` y `saldo`, y la escuela consulta el límite de su cuenta con `estadoLimiteCuenta` (§3).
 
 ---
 
@@ -20,7 +20,7 @@ type Centavos = number;
 ```
 
 - En TypeScript, un monto es válido solo si `Number.isSafeInteger(x) && x >= 0`. Los montos de una operación (`montoCentavos`, total de una venta) además deben ser `> 0`.
-- Tope por operación: `MAX_MONTO_OPERACION_CENTAVOS = 1_000_000` ($10,000.00). Los montos que **manda quien llama** (recarga en efectivo, reembolso) se validan antes de abrir la transacción y, si exceden el tope, dan `ErrorEntrada`. El total de `cobrar` depende de precios que se leen con la cuenta bloqueada, así que se comprueba **dentro** de la transacción, después de la evaluación (`reglas.md` §3, #28). Si lo excede, el resultado es `TOTAL_EXCEDE_LIMITE`, con rollback y sin asientos. Antes de la transacción solo se validan el formato y las cantidades. Ningún saldo se acerca a 2^53, así que `number` alcanza sin perder precisión.
+- Tope por operación: `MAX_MONTO_OPERACION_CENTAVOS = 1_000_000` ($10,000.00). Los montos que **manda quien llama** (recarga en efectivo, reembolso) se validan antes de abrir la transacción y, si exceden el tope, dan `ErrorEntrada`. El total de `cobrar` depende de precios que se leen con la cuenta bloqueada, así que se comprueba **dentro** de la transacción, después de la evaluación ([reglas.md §3](./reglas.md#3-orden-dentro-de-la-transacción)). Si lo excede, el resultado es `TOTAL_EXCEDE_LIMITE`, con rollback y sin asientos. Antes de la transacción solo se validan el formato y las cantidades. Ningún saldo se acerca a 2^53, así que `number` alcanza sin perder precisión.
 - En SQL se usa `bigint`. El driver `pg` devuelve `bigint` como string; la capa del ledger lo convierte con `BigInt`, comprueba que esté en el rango seguro y solo entonces lo devuelve como `number`. Si queda fuera de rango lanza `ErrorInterno`; nunca redondea.
 - En JSON viaja un entero (`1250`). Los strings con decimales o notación científica se rechazan.
 - Solo los bordes convierten a pesos: el cliente pey (que usa `amount` en pesos según su OpenAPI) y la pantalla. Los dos convierten con aritmética entera y tienen pruebas.
@@ -115,7 +115,7 @@ type AlumnoEnCaja = {
 
 ### `cobrar`
 
-Valida y cobra dentro de una sola transacción, con la cuenta `ANTICIPO_ALUMNO` bloqueada (`FOR UPDATE`). El orden interno lo fija `reglas.md` §3 (#28).
+Valida y cobra dentro de una sola transacción, con la cuenta `ANTICIPO_ALUMNO` bloqueada (`FOR UPDATE`). El orden interno lo fija [reglas.md §3](./reglas.md#3-orden-dentro-de-la-transacción).
 
 ```ts
 function cobrar(input: {
