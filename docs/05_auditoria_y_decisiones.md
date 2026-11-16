@@ -212,3 +212,9 @@ Las afirmaciones regulatorias provienen de prensa especializada y resúmenes de 
 ## 8. Actualización del 15 de noviembre
 
 La [spec de diciembre](./08_spec_entrega_diciembre.md) separa el kickoff del producto final. AWS dispone de 80 créditos reportados (cobertura por verificar); n8n está instalado localmente. Lambda/SQS, Bedrock y RDS requieren evaluación y no se consideran implementados. Responsables por tarea; Pagos precede a Campus. Los hallazgos históricos anteriores no prueban capacidades desplegadas.
+
+## 9. Decisión del 16 de noviembre: sin mensajería externa
+
+La persona responsable decidió retirar los avisos por WhatsApp y Telegram. El tutor revisa en la PWA de padres qué compró su hijo, al final del día o de la semana. Razones: cuidar recursos (sin n8n continuo, proveedor, plantillas ni reintentos) y que la PWA ya lleva el registro.
+
+Consecuencias: se retiran RF-21 y RF-23; RF-19 y RF-20 pasan a ser historial y resumen dentro de la app; se elimina `docs/contratos/notificaciones.md` y el outbox; el [contrato del ledger](./contratos/ledger.md) agrega `historial` y `estadoLimiteCuenta`. Los issues de mensajería (#13 y #22) deben cerrarse o redefinirse. Menos datos de menores salen del sistema, lo que también reduce el riesgo de privacidad.

@@ -19,7 +19,7 @@ NutriPey atiende tres problemas:
 
 ## Arquitectura
 
-Circuito abierto para recargar, circuito cerrado para cobrar en la escuela. Decididos: monolito modular Next.js + PostgreSQL y AWS. Propuesta del PR #18: Docker y despliegue inicial en EC2. n8n orquesta avisos fuera de la transacción. Lambda/SQS y Bedrock son evaluaciones opcionales, no servicios implementados.
+Circuito abierto para recargar, circuito cerrado para cobrar en la escuela. Decididos: monolito modular Next.js + PostgreSQL y AWS. Propuesta del PR #18: Docker y despliegue inicial en EC2. Sin mensajería externa: el tutor consulta el historial en la PWA de padres. Lambda/SQS y Bedrock son evaluaciones opcionales, no servicios implementados.
 
 ```mermaid
 flowchart TD
@@ -38,12 +38,10 @@ flowchart TD
         Conciliador["Conciliador periódico"]
         Ledger["Ledger de doble partida (anticipos por alumno)"]
         RuleEngine["Motor de reglas: catálogo SEP, alérgenos, tope diario"]
-        Outbox["Cola de notificaciones"]
         PeyAPI -->|Webhook firmado| WebhookHandler
         Conciliador -->|Consulta transacciones| PeyAPI
         WebhookHandler -->|Acredita anticipo| Ledger
         Conciliador -->|Repara faltantes| Ledger
-        Ledger --> Outbox
     end
 
     subgraph CircuitoCerrado ["Circuito cerrado escolar"]
@@ -54,12 +52,10 @@ flowchart TD
         RuleEngine -->|Débito atómico| Ledger
     end
 
-    subgraph Notificaciones ["Canal con el tutor"]
-        N8N["n8n: envío y reintentos"]
-        WhatsApp["Telegram o WhatsApp: canal por confirmar"]
-        Outbox -.-> N8N
-        N8N -.-> WhatsApp
-        WhatsApp -.-> Padre
+    subgraph AppTutor ["PWA de padres"]
+        Historial["Historial de compras, recargas y bloqueos; saldo"]
+        Ledger -.->|Consulta, sin mensajes externos| Historial
+        Historial -.-> Padre
     end
 ```
 
@@ -117,10 +113,10 @@ Lee [CONTRIBUTING.md](./CONTRIBUTING.md). En resumen: un issue, una rama, un PR,
 
 | Fase | Periodo | Entregables |
 | :--- | :--- | :--- |
-| 1. Validación y especificación | 14 – 15 nov | Prototipo kickoff separado del producto; contrato, Docker y trámites pey/canal/NFC. |
+| 1. Validación y especificación | 14 – 15 nov | Prototipo kickoff separado del producto; contrato, Docker y trámites pey/NFC. |
 | 2. Motor de pagos CoDi | 16 – 22 nov | Núcleo Pagos: CoDi, ledger, cobro, reverso y conciliador; concurrencia e idempotencia con PostgreSQL. Pruebas pey de $0.01. |
 | 3. POS y NFC | 23 – 30 nov | Tras validar Pagos: POS, tutor, Web NFC, catálogo, reglas reales y reportes. |
-| 4. Notificaciones y endurecimiento | 1 – 7 dic | AWS, notificaciones n8n, respaldo/restauración, carga y presupuesto; evaluar Lambda/Bedrock. |
+| 4. Historial del tutor y endurecimiento | 1 – 7 dic | AWS, historial en la PWA de padres, respaldo/restauración, carga y presupuesto; evaluar Lambda/Bedrock. |
 | 5. Demo final | 8 – 12 dic | Estabilización desde el 8, demo real y video de respaldo; confirmar formato y hora final del evento. |
 
-Fuera del MVP: operación offline, varias cuentas receptoras por escuela y reembolso automático de saldo.
+Fuera del MVP: mensajería externa con el tutor (WhatsApp, Telegram, correo), operación offline, varias cuentas receptoras por escuela y reembolso automático de saldo.
