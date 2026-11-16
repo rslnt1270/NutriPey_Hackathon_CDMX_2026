@@ -102,8 +102,8 @@ Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1
 **Tiempos** (se distinguen tres cosas distintas):
 
 - **Por sentencia:** `SET LOCAL statement_timeout = '200ms'` aplica a la única lectura de §3 y a cada escritura.
-- **Total de la transacción:** `SET LOCAL transaction_timeout = '1500ms'` (PostgreSQL 17 o posterior; el proyecto usa 18.6). El servidor aborta la transacción completa aunque haya varias sentencias cortas, y la conexión vuelve al pool solo después del rollback. Si se vence, `ErrorReintentable` (ledger.md §1, resultado no confirmado).
-- **Evaluador:** al ser síncrono y sin I/O, no puede quedarse esperando una Promise. Su costo está acotado por la entrada (máximo 20 partidas y el catálogo de una cooperativa). El presupuesto es de **5 ms p95**, medido en #17 con un catálogo de 500 productos; no hay que cancelarlo porque no puede bloquearse.
+- **Total de la transacción:** `SET LOCAL transaction_timeout = '1500ms'` (PostgreSQL 17 o posterior; el proyecto usa 18.6). El servidor termina la sesión aunque haya varias sentencias cortas: descartar ese cliente del pool; no intentar reutilizarlo ni exigir ROLLBACK en una conexión cerrada. En cambio, tras statement_timeout con sesión viva, confirmar ROLLBACK antes de reutilizarla. Si se vence, `ErrorReintentable` (ledger.md §1, resultado no confirmado).
+- **Evaluador:** al ser síncrono y sin I/O, no puede quedarse esperando una Promise. Su costo está acotado por la entrada (máximo 20 partidas y el catálogo de una cooperativa). El presupuesto es de **5 ms p95**, medido en #17 con un catálogo de 500 productos; es un objetivo de rendimiento, no un deadline duro. No hay cancelación dura de JavaScript en este MVP: una función síncrona defectuosa puede bloquear el event loop y transaction_timeout no la interrumpe. #17 debe validar tamaños de datos, recorrer solo entradas acotadas y medir el costo; el timeout de BD protege los locks, no el tiempo de respuesta de Node.
 
 **Prueba de arquitectura (#10):** ningún archivo de `src/server/reglas/`, `src/server/catalogo/` ni `app/(pos)/` importa `pg`, `src/server/db` o módulos de valor de `src/server/ledger/`. `evaluador.ts` no exporta funciones `async`.
 
@@ -127,9 +127,11 @@ Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1
 
 ## 7. Pruebas que exige el contrato
 
-- **Pagos (#10):** cada motivo con fixtures; salidas corruptas del evaluador (vacía, producto extra u omitido, cantidad distinta, precio 0, fraccionario o negativo, total fuera de rango seguro) dan rollback y `ErrorInterno` sin asientos; precio cambiado entre la solicitud y el paso 5 usa el precio leído; total por encima del límite da `TOTAL_EXCEDE_LIMITE`; un evaluador que lanza excepción produce rollback sin asientos; vencer `transaction_timeout` con varias sentencias cortas y con una lenta da 503 y la conexión vuelve limpia al pool; la prueba de arquitectura de §4 falla si Campus importa `pg` o el pool.
+- **Pagos (#10):** cada motivo con fixtures; salidas corruptas del evaluador (vacía, producto extra u omitido, cantidad distinta, precio 0, fraccionario o negativo, total fuera de rango seguro) dan rollback y `ErrorInterno` sin asientos; precio cambiado entre la solicitud y el paso 5 usa el precio leído; total por encima del límite da `TOTAL_EXCEDE_LIMITE`; un evaluador que lanza excepción produce rollback sin asientos; vencer `transaction_timeout` con varias sentencias inferiores a 200 ms da 503, descarta la conexión terminada y la siguiente adquisición funciona; vencer statement_timeout con una sentencia lenta exige rollback confirmado si la sesión sigue viva; la prueba de arquitectura de §4 falla si Campus importa `pg` o el pool.
 - **Campus (#17):** alérgeno con consentimiento vigente bloquea y sin él no bloquea; categoría bloqueada; producto no publicable; varios bloqueos en una venta; ninguna consulta toca tablas del ledger; logs sin alergias.
 - **Integración (#17):** 20 cobros simultáneos con reglas reales y saldo para 5 dan 5 aprobados; cambio atómico de regla y consentimiento intercalado con cobros concurrentes: cada cobro ve el estado anterior completo o el nuevo completo, nunca una mezcla; un cambio confirmado antes del paso 5 se respeta en ese cobro.
+
+Semántica del servidor: [transaction_timeout termina la sesión](https://www.postgresql.org/docs/current/runtime-config-client.html#GUC-TRANSACTION-TIMEOUT).
 
 ## Preguntas abiertas
 
