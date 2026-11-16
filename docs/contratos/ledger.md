@@ -172,20 +172,51 @@ function anular(input: {
 La usan el webhook pey (#9), el conciliador (#16) y la caja en efectivo (#25).
 
 ```ts
-function acreditarRecarga(input: {
-  recargaId: string;
-  montoCentavos: Centavos;      // CoDi: monto reportado por pey; efectivo: monto recibido
-  origen: "CODI" | "EFECTIVO";
-  referenciaPago: string;       // CoDi: transactionId de pey; efectivo: idempotencyKey de la caja
-  operadorId?: string;          // obligatorio en EFECTIVO
-}): Promise<
+/** Lo que pey reportó del pago. Lo construye quien ya verificó el origen; el ledger no llama a pey. */
+type EvidenciaCodi = {
+  fuente: "WEBHOOK" | "CONCILIADOR";
+  peyTransactionId: string;     // transactionId del pago
+  bankAccountId: string;        // cuenta receptora observada en el pago
+  montoCentavos: Centavos;      // amount de pey convertido a centavos con aritmética entera
+  codiQrId: string | null;      // QR; nulo en push
+  webhookId: string | null;     // solo fuente WEBHOOK (fila de WEBHOOK_EVENTO)
+};
+
+function acreditarRecarga(
+  input:
+    | { origen: "CODI"; recargaId: string; evidencia: EvidenciaCodi }
+    | {
+        origen: "EFECTIVO";
+        recargaId: string;
+        idempotencyKey: string;   // de la caja
+        operadorId: string;       // obligatorio
+        cooperativaId: string;    // de la sesión del operador
+        montoCentavos: Centavos;  // efectivo recibido
+      },
+): Promise<
   | { ok: true; transaccionId: string; saldoCentavos: Centavos; yaAcreditada: boolean }
-  | { ok: false; motivo: "RECARGA_NO_ENCONTRADA" | "MONTO_DISTINTO" | "CUENTA_DISTINTA" | "LIMITE_EFECTIVO" }
+  | {
+      ok: false;
+      motivo: "RECARGA_NO_ENCONTRADA" | "MONTO_DISTINTO" | "CUENTA_DISTINTA" | "NO_CORRELACIONA" | "PAGO_ADICIONAL" | "LIMITE_EFECTIVO";
+    }
 >;
 ```
 
-- Es idempotente por `(origen, referenciaPago)`. La segunda vez responde `yaAcreditada: true` con la transacción original.
-- `MONTO_DISTINTO` y `CUENTA_DISTINTA` no acreditan: dejan la recarga en `REVISION` y la registran en auditoría. pey ya cobró, así que lo resuelve una persona; no hay reintento automático.
+**Quién verifica qué:**
+
+- **Webhook (#9):** verifica la firma sobre el cuerpo crudo, deduplica `webhook-id` y arma `EvidenciaCodi` con los campos del evento (`transactionId`, `bankAccountId`, `amount`, `codiQrId`).
+- **Conciliador (#16):** arma la evidencia con lo que devuelve `GET /transaction/bank-account/{id}` hecho con la API key propia, **fuera** de la transacción. El `bankAccountId` sale de la cuenta consultada.
+- **Ledger:** dentro de la transacción, con la recarga bloqueada (`FOR UPDATE`), compara la evidencia contra lo que tiene guardado:
+  - `evidencia.bankAccountId` contra `cooperativa.pey_bank_account_id` de **la cooperativa de la recarga**. Si no coincide, `CUENTA_DISTINTA`.
+  - `codiQrId` contra `recarga.pey_codi_qr_id` en QR, o `peyTransactionId` contra `recarga.pey_transaction_id` en push. Si no coincide, `NO_CORRELACIONA`.
+  - `montoCentavos` contra `recarga.monto_centavos`. Si no coincide, `MONTO_DISTINTO`.
+- **Efectivo:** `operadorId` debe estar activo, con rol `CAJERO` o `ADMIN`, en la misma cooperativa que la recarga y que `cooperativaId`. Si no, `ErrorNoAutorizado`. Es idempotente por `idempotencyKey` (registro de intención, §1).
+
+**Reglas:**
+
+- CoDi es idempotente por `peyTransactionId` (`UNIQUE`). Webhook y conciliador pueden traer el mismo pago y solo se acredita una vez; la segunda vez responde `yaAcreditada: true`.
+- Un QR puede pagarse más de una vez. Si la recarga ya está `PAGADA` con otro `peyTransactionId`, el pago nuevo es `PAGO_ADICIONAL` y no se acredita solo.
+- Ningún rechazo de CoDi acredita: la recarga queda en `REVISION` con la evidencia en auditoría. pey ya cobró, así que lo resuelve una persona; no hay reintento automático.
 - RN-02 **no** bloquea un pago CoDi ya recibido (eso se aplica al crear el cobro en #26). En efectivo sí se rechaza con `LIMITE_EFECTIVO` si se supera el tope mensual de efectivo.
 - Asientos: en CODI, débito `BANCO` y crédito `ANTICIPO_ALUMNO`; en EFECTIVO, débito `CAJA_EFECTIVO` y crédito `ANTICIPO_ALUMNO`. El aviso `RECARGA_ACREDITADA` se escribe en la misma transacción.
 
