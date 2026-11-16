@@ -199,7 +199,7 @@ function acreditarRecarga(
   | { ok: true; transaccionId: string; saldoCentavos: Centavos; yaAcreditada: boolean }
   | {
       ok: false;
-      motivo: "RECARGA_NO_ENCONTRADA" | "MONTO_DISTINTO" | "CUENTA_DISTINTA" | "NO_CORRELACIONA" | "PAGO_ADICIONAL" | "LIMITE_EFECTIVO";
+      motivo: "RECARGA_NO_ENCONTRADA" | "MONTO_DISTINTO" | "CUENTA_DISTINTA" | "NO_CORRELACIONA" | "PAGO_ADICIONAL" | "REVISION_MANUAL" | "LIMITE_EFECTIVO";
     }
 >;
 ```
@@ -217,8 +217,8 @@ function acreditarRecarga(
 **Reglas:**
 
 - CoDi es idempotente por `peyTransactionId` (`UNIQUE`). Webhook y conciliador pueden traer el mismo pago y solo se acredita una vez; la segunda vez responde `yaAcreditada: true`.
-- Un QR puede pagarse más de una vez. Si la recarga ya está `PAGADA` con otro `peyTransactionId`, el pago nuevo es `PAGO_ADICIONAL` y no se acredita solo.
-- Ningún rechazo de CoDi acredita: la recarga queda en `REVISION` con la evidencia en auditoría. pey ya cobró, así que lo resuelve una persona; no hay reintento automático.
+- La acreditación guarda un vínculo inmutable recarga↔transacción contable↔peyTransactionId, único por recarga y por pago. Bajo el lock de la recarga se consulta ese vínculo **antes** de decidir por estado: el mismo pago reproduce el resultado; un pago distinto da `PAGO_ADICIONAL` aunque el estado mutable haya cambiado. La incidencia del pago adicional se registra aparte, deduplicada por peyTransactionId, sin modificar la acreditación original ni pasar la recarga PAGADA a REVISION.
+- Sin acreditación previa, solo una recarga `PENDIENTE` y con evidencia válida puede acreditarse automáticamente. Una recarga en `REVISION` u otro estado no pendiente da `REVISION_MANUAL`; incluso un pago tardío válido requiere resolución humana si ya venció. Los rechazos se registran sin asientos en una incidencia deduplicada por pago; una recarga existente sin acreditar pasa a REVISION. Si la recarga no existe, solo se conserva la incidencia. Repetir la evidencia no borra ni reabre la incidencia; el proceso manual se define aparte.
 - RN-02 **no** bloquea un pago CoDi ya recibido (eso se aplica al crear el cobro en #26). En efectivo sí se rechaza con `LIMITE_EFECTIVO` si se supera el tope mensual de efectivo.
 - Asientos: en CODI, débito `BANCO` y crédito `ANTICIPO_ALUMNO`; en EFECTIVO, débito `CAJA_EFECTIVO` y crédito `ANTICIPO_ALUMNO`. El aviso `RECARGA_ACREDITADA` se escribe en la misma transacción.
 
@@ -288,6 +288,8 @@ Cubre M5 de la revisión del PR #18.
 Corren contra PostgreSQL real (skill `ledger-change`): concurrencia 20/5, triple reintento con la misma llave, llave con otra entrada que da 409, sobregiro sin asientos, partidas que cuadran, reconstrucción de saldos, reverso que restaura saldo y tope, ventana de 120 s, reintento tras un rechazo sin duplicar el aviso, fallo inyectado en la auditoría del rechazo que da 503, montos `1.5`, `-1`, `2^53` y `"100"` que dan 400. Además: K/P1 rechazada seguida de K/P2 da 409, también después de un fallo de auditoría; dos solicitudes simultáneas con la misma llave dan un solo efecto; operador revocado da 403 al reproducir; misma llave con motivo nuevo produce otra auditoría y misma llave con el mismo motivo no; dos cooperativas con la misma llave no colisionan; respuesta perdida después del `COMMIT` (en éxito y en rechazo) se recupera con la misma llave sin un segundo efecto; evidencia con el `bankAccountId` de otra cooperativa nunca acredita, por webhook ni por conciliador; segundo pago al mismo QR da `PAGO_ADICIONAL`; efectivo de un operador de otra cooperativa da 403.
 
 Prueba A5: A rechaza K y libera el lock; B aprueba K y confirma; A persiste su rechazo; C reintenta K. Debe existir un solo cobro, estado CONFIRMADA estable y el mismo resultado para A/C; la auditoría histórica se conserva sin duplicarse.
+
+Prueba A6: P1 acredita; P2 adicional, P2 repetido y P3 nunca crean otro anticipo automático; P1 sigue devolviendo su resultado original. Probar también recarga en REVISION sin vínculo y carrera de dos pagos distintos para una recarga: máximo una acreditación, incidencias deduplicadas.
 
 ## Preguntas abiertas
 
