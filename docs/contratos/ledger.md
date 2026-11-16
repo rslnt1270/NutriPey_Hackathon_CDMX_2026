@@ -53,11 +53,16 @@ Hay dos familias que no se mezclan:
 class ErrorEntrada extends Error {}       // validación previa; 400; no reintentar
 class ErrorIdempotencia extends Error {}  // llave reutilizada con otra entrada; 409
 class ErrorNoAutorizado extends Error {}  // operador/ámbito inválido; 403
-class ErrorReintentable extends Error {}  // serialización, deadlock, timeout, fallo al persistir un rechazo; 503
+class ErrorReintentable extends Error {}  // resultado NO CONFIRMADO al llamador; 503
 class ErrorInterno extends Error {}       // invariante rota; 500; alerta
 ```
 
-`ErrorReintentable` garantiza que no se confirmó ningún efecto. El cliente reintenta con **la misma llave**.
+`ErrorReintentable` significa **resultado no confirmado**, no "sin efectos": si se pierde la respuesta de un `COMMIT` (timeout, conexión caída), puede que el efecto sí exista. Por eso:
+
+- El llamador reintenta siempre con **la misma llave** (o el mismo `transactionId` de pey). Nunca genera una llave nueva por un 503.
+- El reintento se resuelve con el registro durable de intención (sección 1, "Registro de intención"): si el efecto se confirmó, devuelve el resultado original; si no, lo ejecuta. No hay manera de producir dos efectos.
+- POS: reintenta de forma automática con backoff y, si se agota, muestra "verificando" y consulta reintentando con la misma llave; no cobra con otra. Webhook: responde 5xx para que pey reenvíe el mismo evento. Conciliador: vuelve a pasar el mismo `transactionId` en la siguiente corrida.
+- Cuando sí se sabe que hubo rollback (deadlock o serialización detectados antes del `COMMIT`), la capa reintenta internamente hasta 3 veces antes de devolver 503.
 
 ---
 
