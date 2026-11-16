@@ -109,9 +109,9 @@ Base: `/api/interno/notificaciones/`. Solo se expone dentro de la red privada o 
 ```
 
 - `limite` va de 1 a 50 y `leaseSegundos` de 30 a 300.
-- Solo se reclaman eventos `PENDIENTE` con `proximo_intento <= now()`, usando `SELECT ... FOR UPDATE SKIP LOCKED`. Cada reclamo suma 1 a `intentos` y genera un `leaseId` nuevo; `intento` en la respuesta es ese contador.
+- Solo se reclaman eventos `PENDIENTE` con `proximo_intento <= now()` e `intentos < 5`, usando `SELECT ... FOR UPDATE SKIP LOCKED`. Cada reclamo suma 1 a `intentos` y genera un `leaseId` nuevo; `intento` en la respuesta es ese contador.
 - Un evento `RECLAMADO` con el lease vencido **nunca se reasigna**. Si el worker cayó después de que el proveedor aceptara el mensaje, no hay forma de saberlo. Un barrido (en cada `reclamar` y por cron) lo mueve a `INCIERTO`. Así ningún evento se reenvía automáticamente con un resultado desconocido, y un worker antiguo que siga vivo no compite con otro.
-- Límite total: **5 reclamos** por evento. Al reclamar el quinto sin éxito, el evento pasa a `REVISION_MANUAL` y no se vuelve a entregar.
+- Límite total: **5 reclamos** por evento. El quinto sí se entrega en `RECLAMADO`: éxito → `ENVIADA`; fallo conocido → `REVISION_MANUAL`; resultado desconocido o lease vencido → `INCIERTO`. No existe sexto reclamo, tampoco por reencolado manual.
 
 ### `POST {eventId}/confirmar`
 
@@ -136,11 +136,12 @@ Precedencia:
 
 | `fase` | Significado | Efecto |
 | :--- | :--- | :--- |
-| `ANTES_DE_ENVIAR` | n8n no llegó a llamar al proveedor | `PENDIENTE` con backoff `30 s · 2^(intentos-1)`, máximo 1 h |
+| `ANTES_DE_ENVIAR` | n8n no llegó a llamar al proveedor | `PENDIENTE` con backoff `30 s · 2^(intentos-1)`, máximo 1 h; si `intentos = 5`, `REVISION_MANUAL` |
 | `RECHAZADO_PROVEEDOR` | el proveedor respondió con un error definitivo | `DESTINO_INVALIDO` → `REVISION_MANUAL`; los demás, igual que `ANTES_DE_ENVIAR` |
 | `RESULTADO_DESCONOCIDO` | timeout o caída después de llamar al proveedor | `INCIERTO` |
 
-- Es idempotente por `(eventId, leaseId)`. Un `leaseId` que no es el último del evento responde 409.
+- `confirmar`, `fallar`, el barrido y la resolución manual bloquean la misma fila antes de validar estado/lease y modificarla. `fallar` solo aplica por primera vez en `RECLAMADO` con el último lease vigente; lease vencido pasa a INCIERTO, no a PENDIENTE. Un lease ajeno/antiguo o un estado incompatible da 409 sin mutar. Si confirmar ya dejó ENVIADA, fallar nunca la revierte.
+- Guardar la respuesta y el hash del payload de fallo por `(eventId, leaseId)`: repetición idéntica devuelve esa respuesta sin volver a ejecutar la transición; payload distinto da 409. La respuesta repetida describe el reporte aceptado originalmente, no el estado actual. Una confirmación posterior solo puede cambiar los estados expresamente admitidos en confirmar; los estados finales no se reabren.
 
 ### `INCIERTO`
 
@@ -158,6 +159,8 @@ El outbox v1.1 se amplía **por migración nueva**, sin editar las fusionadas: `
 ## 6. Pruebas que exige el contrato
 
 Token inválido da 401. Dos reclamos concurrentes sin solapamiento. Caída del worker después de que el proveedor acepta y antes de confirmar: el evento pasa a `INCIERTO` sin reenvío. Confirmación tardía de un lease vencido: `ENVIADA`. Confirmación duplicada con otro id: 409 y duplicado auditado. Cinco reclamos sin éxito: `REVISION_MANUAL`. `RESULTADO_DESCONOCIDO`: `INCIERTO`. Consentimiento revocado entre la escritura y el reclamo que lleva a `DESCARTADO`. Hermanos con alias distintos y sin cruce entre tutores. ADMIN sin vínculo con alumnos recibe `LIMITE_CUENTA_80`; el mismo umbral en el mismo mes no se repite y en el mes siguiente sí. `SALDO_BAJO` solo al cruzar, también con `SOLO_ALERTAS`. `COMPRA_ANULADA` sale de `anular`. Payloads sin nombre, iniciales ni alergias (aserción sobre el JSON completo).
+
+Prueba M4: quinto reclamo con éxito, fallo conocido y expiración; ningún sexto reclamo ni reencolado después del quinto. Intercalar confirmar/fallar: confirmar primero conserva ENVIADA; RESULTADO_DESCONOCIDO primero admite confirmación tardía desde INCIERTO. Repetir fallar no repite transiciones ni cambia estados finales.
 
 ## Preguntas abiertas
 
