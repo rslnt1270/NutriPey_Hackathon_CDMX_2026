@@ -284,7 +284,7 @@ Cubre M5 de la revisión del PR #18.
 
 ## 6. Pruebas que exige el contrato
 
-Corren contra PostgreSQL real (skill `ledger-change`): concurrencia 20/5, triple reintento con la misma llave, llave con otra entrada que da 409, sobregiro sin asientos, partidas que cuadran, reconstrucción de saldos, reverso que restaura saldo y tope, ventana de 120 s, reintento tras un rechazo sin duplicar el aviso, fallo inyectado en la auditoría del rechazo que da 503, montos `1.5`, `-1`, `2^53` y `"100"` que dan 400.
+Corren contra PostgreSQL real (skill `ledger-change`): concurrencia 20/5, triple reintento con la misma llave, llave con otra entrada que da 409, sobregiro sin asientos, partidas que cuadran, reconstrucción de saldos, reverso que restaura saldo y tope, ventana de 120 s, reintento tras un rechazo sin duplicar el aviso, fallo inyectado en la auditoría del rechazo que da 503, montos `1.5`, `-1`, `2^53` y `"100"` que dan 400. Además: K/P1 rechazada seguida de K/P2 da 409, también después de un fallo de auditoría; dos solicitudes simultáneas con la misma llave dan un solo efecto; operador revocado da 403 al reproducir; misma llave con motivo nuevo produce otra auditoría y misma llave con el mismo motivo no; dos cooperativas con la misma llave no colisionan; respuesta perdida después del `COMMIT` (en éxito y en rechazo) se recupera con la misma llave sin un segundo efecto; evidencia con el `bankAccountId` de otra cooperativa nunca acredita, por webhook ni por conciliador; segundo pago al mismo QR da `PAGO_ADICIONAL`; efectivo de un operador de otra cooperativa da 403.
 
 ## Preguntas abiertas
 
