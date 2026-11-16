@@ -201,7 +201,7 @@ sequenceDiagram
     PWA->>API: GET historial (sesión del tutor, alumno, rango)
     API->>DB: historial(): comprueba vínculo vigente y lee movimientos y bloqueos
     DB-->>API: Compras, recargas, anulaciones, reembolsos, intentos bloqueados y saldo
-    API-->>PWA: Página de 50 con cursor
+    API-->>PWA: Movimientos del rango y saldo, misma foto (máx. 500)
     PWA-->>Padre: Resumen del periodo y saldo; resalta saldo bajo
 ```
 
