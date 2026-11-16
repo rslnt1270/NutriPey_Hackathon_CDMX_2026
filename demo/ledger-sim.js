@@ -42,7 +42,7 @@
   }
 
   function acreditarRecarga(st, { referencia, alumnoId, centavos, ahora }) {
-    if (!Number.isInteger(centavos) || centavos <= 0) throw new Error("Monto inválido");
+    if (!Number.isSafeInteger(centavos) || centavos <= 0) throw new Error("Monto inválido");
     const previa = st.recargas[referencia];
     if (previa) return { ...previa, repetido: true }; // una sola acreditación por transacción
     const n = asentar(st, "RECARGA_CODI", referencia, [
@@ -72,6 +72,8 @@
     const al = st.alumnos[id];
     if (al.bloqueada) return { ok: false, alumnoId: id, motivo: "Pulsera suspendida por el tutor" };
     if (!items.length) return { ok: false, alumnoId: id, motivo: "Carrito vacío" };
+    // M1 (#34): validar todas las cantidades antes de sumar; una negativa no puede compensar otra.
+    if (!items.every((it) => Number.isSafeInteger(it.qty) && it.qty > 0)) return { ok: false, alumnoId: id, motivo: "Cantidad inválida" };
     let total = 0;
     for (const it of items) {
       const p = PRODUCTOS.find((x) => x.id === it.id);
@@ -79,6 +81,7 @@
       const choque = p.alergenos.find((a) => al.alergenos.includes(a));
       if (choque) return { ok: false, alumnoId: id, motivo: `${p.nombre} contiene ${choque}, bloqueado por el tutor`, regla: "alergeno" };
       total += p.precio * it.qty; // el precio lo pone el servidor, no la caja
+      if (!Number.isSafeInteger(total)) return { ok: false, alumnoId: id, motivo: "Monto fuera de rango" };
     }
     if (gastadoHoy(st, id, ahora) + total > al.tope) return { ok: false, alumnoId: id, motivo: "Supera el tope diario del tutor", regla: "tope" };
     if (saldo(st, id) < total) return { ok: false, alumnoId: id, motivo: "Saldo insuficiente", regla: "saldo" };
