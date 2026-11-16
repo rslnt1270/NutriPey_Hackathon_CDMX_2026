@@ -69,13 +69,20 @@ Pagos lo ejecuta en `cobrar`, todo en un único `BEGIN ... COMMIT`:
 2. Resuelve la credencial por `token_hash` (y SDM y contador si es NTAG 424). Si es inválida, `CREDENCIAL_INVALIDA`.
 3. Comprueba que el alumno esté activo y sea de la escuela de la cooperativa. Si no, `ALUMNO_INACTIVO` o `CREDENCIAL_INVALIDA`.
 4. `SELECT ... FOR UPDATE` de la cuenta `ANTICIPO_ALUMNO`.
-5. **`evaluador(lector, entrada)`**, con el bloqueo ya tomado. Si responde `ok: false`, se traduce a `MotivoRechazoCobro`.
-6. Calcula `total = Σ cantidad × precioUnitarioCentavos` con enteros y comprueba que sea `≤ MAX_MONTO_OPERACION_CENTAVOS`.
-7. Tope diario: si `topeDiarioCentavos` no es nulo y `gastadoHoy + total > tope`, `TOPE_DIARIO`. `gastadoHoy` lo calcula Pagos (compras menos reversos del día CDMX), no Campus.
-8. Saldo: si `total > saldo`, `SALDO_INSUFICIENTE`. Además el `CHECK` de la BD protege aunque falle el código.
-9. Escribe asientos, `DETALLE_VENTA` con los precios que devolvió el evaluador y el outbox. Luego `COMMIT`.
+5. **Lectura única:** una sola sentencia `SELECT` (CTE) con la cuenta ya bloqueada trae los productos pedidos de esa cooperativa, la regla del alumno y si su consentimiento `DATOS_SALUD` está vigente. Con eso arma `DatosReglas`.
+6. **`evaluarReglas(datos, entrada)`**. Si responde `ok: false`, se traduce a `MotivoRechazoCobro`.
+7. Calcula `total = Σ cantidad × precioUnitarioCentavos` con enteros y comprueba que sea `≤ MAX_MONTO_OPERACION_CENTAVOS`.
+8. Tope diario: si `topeDiarioCentavos` no es nulo y `gastadoHoy + total > tope`, `TOPE_DIARIO`. `gastadoHoy` lo calcula Pagos (compras menos reversos del día CDMX), no Campus.
+9. Saldo: si `total > saldo`, `SALDO_INSUFICIENTE`. Además el `CHECK` de la BD protege aunque falle el código.
+10. Escribe asientos, `DETALLE_VENTA` con los precios que devolvió el evaluador y el outbox. Luego `COMMIT`.
 
-Cualquier rechazo de los pasos 2 a 8 sigue [ledger.md §4](./ledger.md) en su v1: `ROLLBACK`, y auditoría y aviso en otra transacción.
+**Vigencia (versión coherente):** en `READ COMMITTED`, cada sentencia tiene su propia foto, y por eso reglas, consentimiento y catálogo se leen en **una sola sentencia** (paso 5). La evaluación usa exactamente el estado confirmado en el instante de esa sentencia. Nunca combina una regla vieja con un consentimiento nuevo, porque no hay dos lecturas.
+
+- Lo que se confirme **antes** del paso 5 (cambio de regla, revocación de consentimiento, cambio de precio o de disponibilidad) se respeta en este cobro. Lo que se confirme **después** aplica desde el siguiente cobro. Es lo mismo que pide RF-15 para la credencial ("desde la siguiente lectura").
+- Los escritores de Campus no necesitan bloquear la cuenta ni coordinarse con `cobrar`. Solo deben cumplir una regla: cada cambio que el tutor ve como uno solo (por ejemplo, regla más consentimiento de salud) se confirma en **una** transacción. Así nunca existe un estado intermedio que la lectura pueda observar.
+- No se usa `REPEATABLE READ` ni `SERIALIZABLE`, para no agregar reintentos por conflicto de serialización en el camino del cobro (p95 de 800 ms).
+
+Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1: `ROLLBACK`, y auditoría y aviso en otra transacción.
 
 ## 4. Límites y tiempos
 
@@ -113,9 +120,8 @@ Cualquier rechazo de los pasos 2 a 8 sigue [ledger.md §4](./ledger.md) en su v1
 
 - **Pagos (#10):** cada motivo con fixtures; un evaluador que lanza excepción produce rollback sin asientos; vencer `transaction_timeout` con varias sentencias cortas y con una lenta da 503 y la conexión vuelve limpia al pool; la prueba de arquitectura de §4 falla si Campus importa `pg` o el pool.
 - **Campus (#17):** alérgeno con consentimiento vigente bloquea y sin él no bloquea; categoría bloqueada; producto no publicable; varios bloqueos en una venta; ninguna consulta toca tablas del ledger; logs sin alergias.
-- **Integración (#17):** 20 cobros simultáneos con reglas reales y saldo para 5 dan 5 aprobados; un cambio de regla del tutor confirmado antes del bloqueo de la cuenta se respeta en el siguiente cobro.
+- **Integración (#17):** 20 cobros simultáneos con reglas reales y saldo para 5 dan 5 aprobados; cambio atómico de regla y consentimiento intercalado con cobros concurrentes: cada cobro ve el estado anterior completo o el nuevo completo, nunca una mezcla; un cambio confirmado antes del paso 5 se respeta en ese cobro.
 
 ## Preguntas abiertas
 
-- [ ] Si un tutor cambia una regla mientras hay un cobro en curso, se aplica la versión que se lea después del `FOR UPDATE` de la cuenta. ¿Basta, o la actualización de reglas también debe bloquear la cuenta?
 - [ ] Confirmar 200 ms por sentencia, 1500 ms de transacción y 5 ms p95 del evaluador cuando se mida en #17.
