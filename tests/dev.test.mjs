@@ -13,8 +13,12 @@ test('next dev sirve la portada sin modificar AGENTS.md', { timeout: 60000 }, as
   const port = socket.address().port;
   await new Promise((resolve) => socket.close(resolve));
   const server = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '--hostname', '127.0.0.1', '--port', String(port)], {
-    stdio: 'ignore', env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+    stdio: ['ignore', 'ignore', 'pipe'], env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
   });
+  let stderr = '';
+  server.stderr.setEncoding('utf8');
+  server.stderr.on('data', (chunk) => { stderr = (stderr + chunk).slice(-16384); });
+  const diagnostic = () => `\nnext dev stderr (últimos 16 KiB):\n${stderr || '(vacío)'}`;
   const stopped = new Promise((resolve) => server.once('exit', resolve));
   try {
     let response;
@@ -27,11 +31,14 @@ test('next dev sirve la portada sin modificar AGENTS.md', { timeout: 60000 }, as
     assert.ok(response, 'next dev debe arrancar dentro de 30 segundos');
     assert.equal(response.status, 200);
     assert.match(await response.text(), /NutriPey/);
+  } catch (error) {
+    error.message += diagnostic();
+    throw error;
   } finally {
     server.kill('SIGTERM');
     const force = setTimeout(() => server.kill('SIGKILL'), 5000);
     await stopped;
     clearTimeout(force);
   }
-  assert.equal(await readFile('AGENTS.md', 'utf8'), original, 'next dev no debe reescribir instrucciones compartidas');
+  assert.equal(await readFile('AGENTS.md', 'utf8'), original, 'next dev no debe reescribir instrucciones compartidas' + diagnostic());
 });
