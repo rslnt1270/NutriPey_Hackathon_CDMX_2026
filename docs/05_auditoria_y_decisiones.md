@@ -8,6 +8,8 @@ Los documentos 01–04 y el README ya incorporan las correcciones descritas aqu�
 
 ---
 
+> Registro histórico: las secciones 1–8 conservan decisiones anteriores. Toda propuesta de mensajería, outbox o n8n queda sustituida por la decisión vigente de §9; no es trabajo autorizado.
+
 ## 1. Veredicto
 
 La idea es buena y encaja con el hackatón: usa CoDi donde CoDi es fuerte (recarga sin comisión desde la banca del padre) y evita usarlo donde es débil (un niño sin celular en una fila de recreo). El ledger de doble partida y la verificación de webhooks son las decisiones correctas.

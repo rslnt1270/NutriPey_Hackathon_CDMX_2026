@@ -66,7 +66,7 @@ sequenceDiagram
 
 **Puntos de diseño**
 
-- Se responde a pey después de confirmar en base de datos y antes de contactar al canal de mensajería.
+- Se responde a pey después de confirmar en base de datos; la consulta posterior del tutor ocurre en la PWA y no condiciona la respuesta al webhook.
 - La correlación es por `codiQrId` en QR y por `transactionId` en push. `numRef` no se usa como llave: solo admite 7 dígitos.
 - Se acredita el monto que reporta pey, no el que pidió el cliente.
 

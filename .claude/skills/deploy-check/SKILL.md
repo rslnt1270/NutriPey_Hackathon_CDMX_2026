@@ -19,7 +19,6 @@ Desplegar a producción es una acción visible y difícil de revertir. Pide conf
   - `PEY_API_KEY` (la de producción, distinta de la de desarrollo)
   - `PEY_WEBHOOK_SECRET`
   - `PEY_BANK_ACCOUNT_ID` de la cooperativa de la demo
-  - Credenciales del canal elegido (Telegram o WhatsApp) y n8n
   - Secreto de sesión
 - [ ] La cuenta bancaria está en `codiStatus: ACTIVE` (`GET /bank-account/{id}`).
 - [ ] La base de datos y el cómputo están en la misma región. El objetivo en caja es p95 ≤ 800 ms.
@@ -40,7 +39,7 @@ En este orden. Si un paso falla, se detiene y se reporta.
 4. **Recarga real de $0.01:** crear la recarga, pagar desde una app bancaria y confirmar:
    - el saldo sube exactamente 1 centavo,
    - existe un `WEBHOOK_EVENTO` con resultado `ACREDITADO`,
-   - llegó el aviso por el canal elegido.
+   - la recarga aparece una sola vez en el historial de la PWA del tutor autorizado.
 5. **Cobro:** un cobro de prueba contra el alumno de demostración se aprueba; repetirlo con la misma llave de idempotencia no cobra dos veces.
 6. **Rechazo:** un producto con alérgeno bloqueado devuelve 422 `PRODUCTO_BLOQUEADO`.
 7. **Latencia:** 20 cobros seguidos; anotar el p95.
