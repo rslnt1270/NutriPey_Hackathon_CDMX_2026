@@ -4,7 +4,7 @@ Esta base no implementa pagos, Campus ni el contrato del ledger. La demo del kic
 
 ## Herramientas y arranque
 
-Node 22.22.2 (`.nvmrc`), npm y PostgreSQL 18.6. Versiones de Next/React fijadas en `package.json`; `npm ci` instala el lockfile sin resolver versiones nuevas. Docker/Compose se implementa aparte en #19. En Linux se limita la ejecución de validaciones a dos CPU.
+Node 22.22.2 (`.nvmrc`), npm y PostgreSQL 18.6. Versiones de Next/React fijadas en `package.json`; `npm ci` instala el lockfile sin resolver versiones nuevas. El entorno Docker/Compose se describe en [Contenedores locales](./docker.md). En Linux se limita la ejecución de validaciones a dos CPU.
 
 ```bash
 npm ci

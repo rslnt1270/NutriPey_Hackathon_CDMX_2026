@@ -1,0 +1,24 @@
+name: Contenedores
+on:
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - compose.yaml
+      - next.config.ts
+      - package*.json
+      - app/**
+      - src/**
+      - scripts/verificar_docker.py
+      - .github/workflows/contenedores.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  humo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Construcción y persistencia (máximo dos CPU)
+        run: python3 scripts/con_dos_cpu.py python3 scripts/verificar_docker.py
