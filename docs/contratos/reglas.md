@@ -65,13 +65,19 @@ export type EvaluadorReglas = (datos: DatosReglas, entrada: EntradaReglas) => Re
 
 Pagos lo ejecuta en `cobrar`, todo en un único `BEGIN ... COMMIT`:
 
-1. Busca la llave de idempotencia. Si el resultado ya estaba confirmado, lo devuelve.
+1. Registro de intención (ledger.md v1 §1): comprueba ámbito y hash, autoriza al operador **actual** y bloquea la fila. Solo entonces, si la intención está `CONFIRMADA`, devuelve el resultado original. Un operador revocado no recupera iniciales ni foto por tener la llave.
 2. Resuelve la credencial por `token_hash` (y SDM y contador si es NTAG 424). Si es inválida, `CREDENCIAL_INVALIDA`.
 3. Comprueba que el alumno esté activo y sea de la escuela de la cooperativa. Si no, `ALUMNO_INACTIVO` o `CREDENCIAL_INVALIDA`.
 4. `SELECT ... FOR UPDATE` de la cuenta `ANTICIPO_ALUMNO`.
 5. **Lectura única:** una sola sentencia `SELECT` (CTE) con la cuenta ya bloqueada trae los productos pedidos de esa cooperativa, la regla del alumno y si su consentimiento `DATOS_SALUD` está vigente. Con eso arma `DatosReglas`.
-6. **`evaluarReglas(datos, entrada)`**. Si responde `ok: false`, se traduce a `MotivoRechazoCobro`.
-7. Calcula `total = Σ cantidad × precioUnitarioCentavos` con enteros y comprueba que sea `≤ MAX_MONTO_OPERACION_CENTAVOS`.
+6. **`evaluarReglas(datos, entrada)`**. Si responde `ok: false`, se traduce a `MotivoRechazoCobro`. Si responde `ok: true`, Pagos comprueba la **integridad** de la salida antes de usarla, sin repetir reglas de negocio:
+   - `lineas` corresponde exactamente a `entrada.items`: los mismos `productoId`, cada uno una sola vez, con la misma `cantidad`; ni vacía, ni omisiones, ni extras.
+   - Cada `precioUnitarioCentavos` es un entero seguro mayor que 0 e igual al `precioCentavos` de `datos` para ese producto. El precio 0 no está permitido en el MVP.
+   - `topeDiarioCentavos` es `null` o un entero seguro ≥ 0, igual al de `datos.regla`.
+   - En un rechazo, `productos` no está vacío y es un subconjunto de los ids pedidos.
+
+   Si algo de esto falla, hay rollback y `ErrorInterno`, con alerta y sin asientos. Nunca se cobra una venta vacía ni parcial.
+7. Calcula `total = Σ cantidad × precioUnitarioCentavos` con enteros, comprobando `Number.isSafeInteger` en cada producto y en la suma. Si `total > MAX_MONTO_OPERACION_CENTAVOS`, el resultado es `TOTAL_EXCEDE_LIMITE` (ledger.md v1 §1). Esta es la única comprobación del total, porque antes de la transacción no se conocen los precios.
 8. Tope diario: si `topeDiarioCentavos` no es nulo y `gastadoHoy + total > tope`, `TOPE_DIARIO`. `gastadoHoy` lo calcula Pagos (compras menos reversos del día CDMX), no Campus.
 9. Saldo: si `total > saldo`, `SALDO_INSUFICIENTE`. Además el `CHECK` de la BD protege aunque falle el código.
 10. Escribe asientos, `DETALLE_VENTA` con los precios que devolvió el evaluador y el outbox. Luego `COMMIT`.
@@ -103,6 +109,9 @@ Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1
 
 ## 5. Reglas de negocio del evaluador
 
+**Conteo para RF-18:** `alergenosParaConteo` solo incrementa `conteo_bloqueo(cooperativa_id, fecha_cdmx, alergeno, n)` en la transacción del rechazo (ledger.md §4). Esa tabla no tiene alumno, operador, intento ni hora. El código de alérgeno **no** se guarda en `AUDIT_LOG`, en el outbox ni en logs; la auditoría individual solo guarda el tipo de regla (`ALERGENO` o `CATEGORIA`).
+
+
 - Un producto que no existe, de otra cooperativa, con `publicable = false` o `disponible = false` da `PRODUCTO_NO_DISPONIBLE`. Esto se revisa antes que las reglas del tutor.
 - `PRODUCTO_BLOQUEADO` aplica si el producto tiene un alérgeno prohibido para el alumno **y** el consentimiento `DATOS_SALUD` está vigente. Sin consentimiento vigente no se aplican reglas de alérgeno, y eso se documenta para el tutor en #14.
 - `PRODUCTO_BLOQUEADO` también aplica si la categoría del producto está en `categorias_bloqueadas`.
@@ -118,7 +127,7 @@ Cualquier rechazo de los pasos 2 a 9 sigue [ledger.md §4](./ledger.md) en su v1
 
 ## 7. Pruebas que exige el contrato
 
-- **Pagos (#10):** cada motivo con fixtures; un evaluador que lanza excepción produce rollback sin asientos; vencer `transaction_timeout` con varias sentencias cortas y con una lenta da 503 y la conexión vuelve limpia al pool; la prueba de arquitectura de §4 falla si Campus importa `pg` o el pool.
+- **Pagos (#10):** cada motivo con fixtures; salidas corruptas del evaluador (vacía, producto extra u omitido, cantidad distinta, precio 0, fraccionario o negativo, total fuera de rango seguro) dan rollback y `ErrorInterno` sin asientos; precio cambiado entre la solicitud y el paso 5 usa el precio leído; total por encima del límite da `TOTAL_EXCEDE_LIMITE`; un evaluador que lanza excepción produce rollback sin asientos; vencer `transaction_timeout` con varias sentencias cortas y con una lenta da 503 y la conexión vuelve limpia al pool; la prueba de arquitectura de §4 falla si Campus importa `pg` o el pool.
 - **Campus (#17):** alérgeno con consentimiento vigente bloquea y sin él no bloquea; categoría bloqueada; producto no publicable; varios bloqueos en una venta; ninguna consulta toca tablas del ledger; logs sin alergias.
 - **Integración (#17):** 20 cobros simultáneos con reglas reales y saldo para 5 dan 5 aprobados; cambio atómico de regla y consentimiento intercalado con cobros concurrentes: cada cobro ve el estado anterior completo o el nuevo completo, nunca una mezcla; un cambio confirmado antes del paso 5 se respeta en ese cobro.
 
