@@ -8,7 +8,7 @@ Convenciones: los montos son enteros en centavos (`bigint`), las fechas son `tim
 
 ---
 
-Extensión planificada v1.2: #4 y #13 definirán canal/destino verificado (chat_id para Telegram, no teléfono), consentimiento de mensajería, lease e identificador/estado del proveedor en una migración nueva. Este ERD conserva el modelo base; no implementa todavía esas extensiones. `transaccion_id` en outbox debe admitir nulo para rechazos sin movimiento contable. Ver [spec](./08_spec_entrega_diciembre.md).
+Decisión del 16 noviembre: sin mensajería externa, así que no hay outbox. El [contrato del ledger](./contratos/ledger.md) agrega `INTENTO_OPERACION` (registro de idempotencia) y `AUDITORIA_RECHAZO` (rechazos que el tutor ve en el historial), que se crearán por migración en #6. Ver [spec](./08_spec_entrega_diciembre.md).
 
 ## 1. Diagrama Entidad-Relación
 
@@ -34,7 +34,7 @@ erDiagram
     CUENTA_LEDGER ||--o{ ASIENTO_CONTABLE : afecta
     TRANSACCION ||--o{ DETALLE_VENTA : genera
     PRODUCTO ||--o{ DETALLE_VENTA : incluye
-    TRANSACCION ||--o{ NOTIFICACION_OUTBOX : dispara
+    ESTUDIANTE ||--o{ AUDITORIA_RECHAZO : registra
 
     ESCUELA {
         uuid id PK
@@ -69,8 +69,8 @@ erDiagram
     TUTOR {
         uuid id PK
         string nombre_completo
-        string telefono "10 digitos para CoDi push; WhatsApp si se elige"
-        string preferencia_avisos "RESUMEN_DIARIO | POR_COMPRA | SOLO_ALERTAS"
+        string telefono "10 digitos para CoDi push"
+        bigint umbral_saldo_bajo_centavos "Indicador en la PWA; 0 lo desactiva"
         timestamptz created_at
     }
 
@@ -195,15 +195,14 @@ erDiagram
         timestamptz recibido_en
     }
 
-    NOTIFICACION_OUTBOX {
+    AUDITORIA_RECHAZO {
         uuid id PK
-        uuid transaccion_id FK
-        uuid tutor_id FK
-        string plantilla
-        jsonb variables
-        string status "PENDIENTE | ENVIADA | FALLIDA"
-        int intentos
-        timestamptz proximo_intento
+        uuid intento_id FK "UNIQUE con motivo"
+        uuid estudiante_id FK "Nulo en CREDENCIAL_INVALIDA"
+        string motivo
+        string_arr reglas "ALERGENO y/o CATEGORIA; vacio para otros motivos"
+        uuid_arr productos "A retirar; sin codigos de alergeno"
+        timestamptz ocurrido_en
     }
 
     AUDIT_LOG {
@@ -272,14 +271,13 @@ UPDATE cuenta_ledger SET saldo_centavos = saldo_centavos + $7 WHERE id = $ingres
 INSERT INTO asiento_contable (transaccion_id, cuenta_ledger_id, tipo_asiento, monto_centavos)
 VALUES ($1, $anticipo, 'DEBITO', $7), ($1, $ingreso, 'CREDITO', $7);
 
--- 5. Detalle de venta y notificacion en la misma transaccion.
+-- 5. Detalle de venta en la misma transaccion.
 INSERT INTO detalle_venta (...) VALUES (...);
-INSERT INTO notificacion_outbox (...) VALUES (...);
 
 COMMIT;
 ```
 
-Los rechazos de negocio (alérgeno, tope, saldo) no crean una `TRANSACCION`. Se registran en `AUDIT_LOG` y, si corresponde, en `NOTIFICACION_OUTBOX`.
+Los rechazos de negocio (alérgeno, tope, saldo) no crean una `TRANSACCION`. Se registran en `AUDITORIA_RECHAZO`, en otra transacción (contrato del ledger §4).
 
 ---
 
@@ -292,7 +290,7 @@ CREATE UNIQUE INDEX idx_cuenta_anticipo    ON cuenta_ledger (estudiante_id) WHER
 CREATE INDEX idx_recarga_pendiente         ON recarga (status, expira_en) WHERE status = 'PENDIENTE';
 CREATE INDEX idx_tx_estudiante_dia         ON transaccion (estudiante_id, created_at DESC);
 CREATE INDEX idx_asiento_cuenta            ON asiento_contable (cuenta_ledger_id, created_at DESC);
-CREATE INDEX idx_outbox_pendiente          ON notificacion_outbox (proximo_intento) WHERE status = 'PENDIENTE';
+CREATE INDEX idx_rechazo_estudiante        ON auditoria_rechazo (estudiante_id, ocurrido_en DESC);
 ```
 
 El cobro resuelve credencial, alumno, reglas y cuenta con cuatro lecturas por llave. No suma asientos.

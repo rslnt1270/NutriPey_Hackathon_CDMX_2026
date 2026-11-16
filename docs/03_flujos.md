@@ -20,7 +20,6 @@ sequenceDiagram
     participant PeyAPI as API pey (api.pey.mx)
     participant Banxico as Red CoDi / Banxico
     participant Banco as App bancaria del tutor
-    participant Cola as Cola de notificaciones
 
     Padre->>NutriApp: Elige monto 100 MXN y método (QR o push)
     NutriApp->>NutriAPI: POST /api/recargas (estudiante, monto, método)
@@ -34,7 +33,7 @@ sequenceDiagram
 
     Note over NutriAPI,PeyAPI: Con push se usa POST /codi/pn con phoneNumber. La respuesta trae transactionId y codiId.
 
-    Padre->>Banco: Escanea el QR o abre la notificación
+    Padre->>Banco: Escanea el QR o abre la solicitud CoDi
     Banco->>Banxico: Autoriza el pago
     Banxico-->>Banco: Pago liquidado en la cuenta de la cooperativa
     Banxico->>PeyAPI: Confirmación de pago
@@ -58,17 +57,16 @@ sequenceDiagram
     else Pago válido
         NutriAPI->>DB: Débito BANCO, crédito ANTICIPO_ALUMNO
         NutriAPI->>DB: RECARGA pasa a PAGADA con pey_transaction_id
-        NutriAPI->>DB: Inserta aviso en NOTIFICACION_OUTBOX y COMMIT
+        NutriAPI->>DB: COMMIT
         NutriAPI-->>PeyAPI: 200
     end
 
-    Cola-)Padre: Canal elegido: recarga acreditada de 100.00 MXN
     NutriApp-->>Padre: La consulta de estado muestra el nuevo saldo
 ```
 
 **Puntos de diseño**
 
-- Se responde a pey después de confirmar en base de datos y antes de contactar al canal de mensajería.
+- Se responde a pey después de confirmar en base de datos; la consulta posterior del tutor ocurre en la PWA y no condiciona la respuesta al webhook.
 - La correlación es por `codiQrId` en QR y por `transactionId` en push. `numRef` no se usa como llave: solo admite 7 dígitos.
 - Se acredita el monto que reporta pey, no el que pidió el cliente.
 
@@ -119,7 +117,6 @@ sequenceDiagram
     participant POS as POS Web (Web NFC)
     participant Backend as NutriPey Backend
     participant DB as PostgreSQL (Ledger)
-    participant Cola as Cola de notificaciones
 
     Cajero->>POS: Marca productos (1 mollete, 1 manzana)
     Cajero->>POS: Pulsa Cobrar e inicia la lectura
@@ -141,17 +138,16 @@ sequenceDiagram
             POS-->>Cajero: Pantalla roja: credencial no válida
         else Producto bloqueado por regla del tutor
             Backend->>DB: ROLLBACK del intento de cobro
-            Backend->>DB: BEGIN separado, auditoría y outbox de rechazo, COMMIT
+            Backend->>DB: BEGIN separado, auditoría del rechazo, COMMIT
             Backend-->>POS: 422 PRODUCTO_BLOQUEADO
             POS-->>Cajero: Pantalla roja: indica qué producto retirar
-            Cola->>DB: Reclama aviso de rechazo confirmado
         else Tope diario o saldo insuficiente
             Backend->>DB: ROLLBACK
             Backend-->>POS: 422 TOPE_DIARIO o SALDO_INSUFICIENTE
             POS-->>Cajero: Pantalla amarilla: saldo disponible
         else Aprobada
             Backend->>DB: Débito ANTICIPO_ALUMNO, crédito INGRESO_VENTAS
-            Backend->>DB: Detalle de venta y aviso en outbox
+            Backend->>DB: Detalle de venta
             Backend->>DB: COMMIT
             Backend-->>POS: 200 con saldo nuevo, iniciales y grupo
             POS-->>Cajero: Pantalla verde con botón Anular por 2 minutos
@@ -165,7 +161,6 @@ sequenceDiagram
         Backend-->>POS: 200 anulada
     end
 
-    Cola-)Cola: Resumen diario o ticket según preferencia del tutor
 ```
 
 **Puntos de diseño**
@@ -192,28 +187,22 @@ stateDiagram-v2
     BAJA --> [*] : El saldo sigue en la cuenta del alumno
 ```
 
-## 5. Notificación posterior al commit (diseño v1.2)
+## 5. Consulta del tutor en la PWA (decisión del 16 nov)
+
+NutriPey no envía mensajes externos. El tutor abre la PWA cuando quiere, por ejemplo al final del día o de la semana:
 
 ```mermaid
 sequenceDiagram
+    actor Padre as Tutor
+    participant PWA as PWA de padres
+    participant API as NutriPey Backend
     participant DB as PostgreSQL
-    participant API as API interna autenticada
-    participant N as n8n
-    participant P as Telegram o WhatsApp
-    Note over DB: Movimiento y outbox, o auditoría y outbox de rechazo, confirmados
-    N->>API: Reclamar lote pendiente
-    API->>DB: Reservar eventos con lease e intentos
-    DB-->>API: eventId y destinatario autorizado
-    API-->>N: Lote mínimo
-    N->>P: Enviar aviso
-    alt Proveedor acepta mensaje
-        P-->>N: Identificador de mensaje
-        N->>API: Confirmar aceptación del proveedor
-        API->>DB: Guardar estado e identificador
-    else Fallo o timeout
-        N->>API: Registrar fallo cuando sea posible
-        Note over DB,N: Al vencer lease, reintentar con backoff y límite
-    end
+    Padre->>PWA: Abre el historial del alumno (día o semana)
+    PWA->>API: GET historial (sesión del tutor, alumno, rango)
+    API->>DB: historial(): comprueba vínculo vigente y lee movimientos y bloqueos
+    DB-->>API: Compras, recargas, anulaciones, reembolsos, intentos bloqueados y saldo
+    API-->>PWA: Movimientos del rango y saldo, misma foto (máx. 500)
+    PWA-->>Padre: Resumen del periodo y saldo; resalta saldo bajo
 ```
 
-Aceptar el webhook o mensaje no prueba entrega al teléfono. Un timeout después del envío puede duplicar avisos; deduplicar por evento/destinatario y registrar resultado incierto. Un fallo de n8n no revierte pagos. Desarrollo usa n8n local; diciembre requiere operación continua. Contrato y migración del outbox se detallan en #4 y #13.
+Un fallo de la PWA no afecta cobros ni webhooks. Ver `historial` en el [contrato del ledger](./contratos/ledger.md).

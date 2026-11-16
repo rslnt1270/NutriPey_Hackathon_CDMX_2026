@@ -45,7 +45,7 @@ Orden obligatorio del manejador:
 3. Insertar `webhook-id` en `WEBHOOK_EVENTO`. Si ya existe, responder 200 y terminar.
 4. Correlacionar por `codiQrId` (QR) o `transactionId` (push).
 5. Acreditar el `amount` del evento con `acreditarRecarga`, que es idempotente por `transactionId`.
-6. Responder 2xx. Las notificaciones salen de la cola, nunca dentro del manejador.
+6. Responder 2xx después de confirmar el efecto o su incidencia. El tutor consulta el historial en la PWA; no se envían mensajes externos.
 
 Un pago sin recarga pendiente no es un error: se guarda, se marca `REVISION` y se responde 200.
 

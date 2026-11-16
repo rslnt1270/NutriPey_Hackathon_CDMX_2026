@@ -23,13 +23,13 @@ D1: monolito Next.js con PostgreSQL, decidido el 15 noviembre. Los carriles deli
 
 | Carril | Rutas | Contenido |
 | :--- | :--- | :--- |
-| **Pagos** | `src/server/ledger/`, `src/server/pey/`, `src/server/notificaciones/`, `app/api/interno/notificaciones/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, outbox, migraciones. |
+| **Pagos** | `src/server/ledger/`, `src/server/pey/`, `app/api/webhooks/`, `app/api/recargas/`, `app/api/cron/`, `db/` | Ledger, integración pey, webhook, conciliador, historial autorizado, migraciones. |
 | **Campus** | `app/(pos)/`, `app/(tutor)/`, `app/(escuela)/`, `app/api/pos/`, `src/server/reglas/`, `src/server/catalogo/`, `src/lib/nfc/` | POS, Web NFC, catálogo SEP, reglas del tutor, reportes, UI. |
 | **Compartido** | `Dockerfile`, `.dockerignore`, `compose*.yaml`, `package.json`, lockfile, `db/migrations/`, `src/server/ledger/index.ts`, `docs/contratos/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.github/` | Solo se cambia en un PR dedicado, pequeño, que se fusiona antes que el resto. |
 
-`README.md` y `docs/` (salvo contratos) pueden actualizarse en el PR funcional del issue. `infrastructure/` y `automation/` pertenecen a tareas de infraestructura/automatización con rutas explícitas y PR dedicado; se fusionan antes de sus dependientes, no antes de todo el proyecto. #13 separa backend Pagos del workflow en `automation/n8n/`; #11/#22/#23/#30 usan sus rutas de infraestructura.
+`README.md` y `docs/` (salvo contratos) pueden actualizarse en el PR funcional del issue. `infrastructure/` y `automation/` pertenecen a tareas de infraestructura/automatización con rutas explícitas y PR dedicado; se fusionan antes de sus dependientes, no antes de todo el proyecto. #13 y #22 quedan pendientes de decisión humana tras retirar la mensajería externa; no implementar su alcance anterior. #11/#23/#30 usan sus rutas de infraestructura.
 
-**Frontera entre carriles:** Campus nunca escribe SQL sobre tablas del ledger. Llama a las funciones que Pagos exporta desde `src/server/ledger/index.ts` (`cobrar`, `anular`, `acreditarRecarga`, `saldo`). La firma de esas funciones se acuerda en `docs/contratos/` antes de implementarlas.
+**Frontera entre carriles:** Campus nunca escribe SQL sobre tablas del ledger. Llama a las funciones que Pagos exporta desde `src/server/ledger/index.ts` (`cobrar`, `anular`, `acreditarRecarga`, `registrarReembolso`, `saldo`, `historial`, `estadoLimiteCuenta`). La firma de esas funciones se acuerda en `docs/contratos/` antes de implementarlas.
 
 **Migraciones:** solo el carril Pagos las crea, con prefijo de fecha y hora (`20261116_1030_nombre.sql`). Nunca edites una migración ya fusionada.
 

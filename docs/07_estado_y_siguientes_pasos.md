@@ -67,7 +67,6 @@ Primero base y Pagos; Campus inicia tras #12. El [plan vigente](./superpowers/pl
 
 - [ ] **Registrar la CLABE receptora en pey.** Tarda hasta 5 días hábiles. Mientras tanto, usar la cuenta de prueba de pey con $0.01.
 - [ ] **Crear la API key y el webhook en el portal de pey.** Guardar el secreto: se muestra una sola vez.
-- [ ] **Elegir Telegram o WhatsApp Cloud**, verificar destinatarios y consentimiento; no retrasar Pagos por mensajería.
 - [ ] **Comprar tags:** NTAG213 para la demo y dos o tres NTAG 424 DNA.
 - [ ] **Conseguir un Android con NFC** para el POS.
 - [ ] **Contactar una cooperativa escolar** para una prueba piloto.
@@ -84,7 +83,7 @@ Primero base y Pagos; Campus inicia tras #12. El [plan vigente](./superpowers/pl
 - [x] **Responsables por tarea**, sin dueños permanentes de carril.
 - [x] **D1:** monolito modular Next.js con PostgreSQL. Docker propuesto en PR #18.
 - [x] **Proveedor:** AWS. EC2 inicial propuesto en PR #18; región, costo y base de datos separada pendientes.
-- [ ] **D2:** Telegram o WhatsApp Cloud; n8n local disponible, alojamiento continuo pendiente.
+- [x] **D2:** sin mensajería externa (16 nov). El tutor consulta el historial en la PWA de padres.
 - [ ] Aprobar el borrador de [contratos/ledger.md](./contratos/ledger.md).
 - [ ] Añadir `.github/CODEOWNERS` con los usuarios de cada carril.
 
@@ -111,7 +110,7 @@ Issues registrados y desglosados en el plan. Cada tarea implementable es una ram
 5. Webhook de pey: verificación, deduplicación y acreditación.
 6. Conciliador corto y diario.
 7. `cobrar` y `anular` reales, con prueba de concurrencia.
-8. Cola de notificaciones y envío por el canal elegido mediante n8n.
+8. `historial` para la PWA de padres y `estadoLimiteCuenta` para el panel de la escuela.
 
 **Carril Campus**
 

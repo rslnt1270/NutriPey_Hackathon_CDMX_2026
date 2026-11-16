@@ -37,12 +37,12 @@ El trabajo se divide en vertical. Cada carril tiene carpetas propias y los agent
 
 | Carril | Qué construye | Dueña o dueño |
 | :--- | :--- | :--- |
-| **Pagos** | Ledger, integración con pey, webhook, conciliador, cola de notificaciones, migraciones. | Responsable del issue; no hay dueño permanente. |
+| **Pagos** | Ledger, integración con pey, webhook, conciliador, migraciones. | Responsable del issue; no hay dueño permanente. |
 | **Campus** | POS, Web NFC, catálogo SEP, reglas del tutor, app del tutor, reportes. | Responsable del issue; no hay dueño permanente. |
 
 Las rutas exactas están en [AGENTS.md](../AGENTS.md#carriles-y-rutas).
 
-Asignación inicial: `rslnt1270` implementa Pagos e infraestructura; `eri2905` coordina contratos, validación, notificaciones y luego Campus. Ambas personas pueden asumir tareas de cualquier carril; sus rutas se respetan por issue.
+Asignación inicial: `rslnt1270` implementa Pagos e infraestructura; `eri2905` coordina contratos, validación y luego Campus. Ambas personas pueden asumir tareas de cualquier carril; sus rutas se respetan por issue.
 
 ### 2.4 La frontera es un contrato escrito
 Campus necesita cobrar, y cobrar es del ledger. Para que nadie espere a nadie:
@@ -107,7 +107,7 @@ Después del gate #12 inicia Campus. Contratos, trámites y preparación de infr
 | :--- | :--- | :--- |
 | **2** (16–22 nov) | Esquema y ledger, `POST /codi/qr` y `/codi/pn`, webhook, conciliador. | Contrato de reglas, casos de aceptación y validación de Pagos; sin implementación Campus. |
 | **3** (23–30 nov) | Integración y correcciones sobre Pagos ya verificado. | POS, Web NFC, fallbacks, grabado de tags. |
-| **4** (1–7 dic) | Cola/n8n, recuperación, métricas y presupuesto AWS. | Reporte de cumplimiento SEP, pulido del POS, prueba en la cooperativa piloto. |
+| **4** (1–7 dic) | Historial del tutor (`historial`), recuperación, métricas y presupuesto AWS. | Reporte de cumplimiento SEP, pulido del POS, prueba en la cooperativa piloto. |
 | **5** (8–12 dic) | Despliegue y verificación. | Video y pitch. |
 
 ---

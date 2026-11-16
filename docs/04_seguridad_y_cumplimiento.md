@@ -27,14 +27,14 @@ Marco aplicable: *Ley General de los Derechos de Niñas, Niños y Adolescentes* 
 | Alergias | **Sensible** | Consentimiento expreso del tutor. Cifrado en reposo. Solo se usa para evaluar el cobro. |
 | Foto | Personal, opcional | Consentimiento separado. Por defecto se muestran iniciales y grupo. |
 | Historial de consumo | Personal | Visible solo para los tutores del alumno. |
-| Teléfono del tutor / destino de mensajería | Personal | Teléfono para CoDi push y WhatsApp; chat_id verificado si se elige Telegram. |
+| Teléfono del tutor | Personal | Solo para CoDi push. No se usa para mensajería. |
 
 **Principios**
 
 1. **Consentimiento antes del alta.** El tutor acepta el aviso de privacidad, con consentimiento expreso para datos de salud. Se registra la versión del aviso y la fecha. Puede revocarlo.
 2. **Chip sin datos personales.** La credencial contiene únicamente un token aleatorio. No guarda nombre, saldo, alergias ni foto.
 3. **Minimización en caja.** El cajero ve qué producto retirar, nunca el motivo médico.
-4. **Minimización en mensajería.** Identificar en el aviso a los proveedores elegidos (Telegram o WhatsApp y alojamiento n8n). Verificar consentimiento y destinatario; omitir nombres y alergias del menor. Distinguir alumnos con un alias neutro asignado (p. ej., «Alumno A»), visible en la app del tutor, sin iniciales reales ni texto libre con datos personales. El vínculo alias/alumno es privado y el destino debe estar autorizado. Configurar retención de ejecuciones y evitar payloads personales en logs.
+4. **Sin mensajería externa.** Desde el 16 noviembre, NutriPey no envía datos del menor a WhatsApp, Telegram, n8n ni correo. El tutor ve el historial dentro de la PWA, con su sesión, y el ledger vuelve a comprobar el vínculo tutor–alumno en cada consulta.
 5. **Reportes agregados.** La dirección escolar y SEDECO reciben totales por categoría y periodo, con un mínimo de alumnos por grupo para evitar la reidentificación.
 6. **Retención.** Al egresar el alumno se eliminan foto, reglas y alergias. Los asientos contables se conservan disociados.
 
@@ -85,7 +85,7 @@ El backend guarda solo el SHA-256 del token. **Este nivel es clonable** y se sos
 - Iniciales, grupo o foto en pantalla tras cada cobro.
 - Anulación por el cajero durante 2 minutos.
 - Bloqueo por el tutor, efectivo desde la siguiente lectura.
-- Aviso al tutor en cada compra o en el resumen diario.
+- Historial de compras visible para el tutor en la PWA.
 - PIN del alumno por encima de un monto configurable (posterior al MVP).
 
 ### C. Nivel 2: producción (NTAG 424 DNA)
@@ -137,4 +137,4 @@ El chip genera en cada lectura una URL distinta con datos cifrados, un contador 
 
 ## 8. Infraestructura y automatizaciones (diseño v1.2)
 
-PostgreSQL sin acceso público; roles IAM mínimos, secretos fuera de imágenes y respaldo cifrado con restauración probada. n8n usa una API autenticada de notificaciones, sin escritura al ledger. Bedrock, si se adopta, recibe solo agregados sin identificadores ni datos de salud. El presupuesto debe verificar créditos elegibles y alertas; no se presupone un corte automático de gasto.
+PostgreSQL sin acceso público; roles IAM mínimos, secretos fuera de imágenes y respaldo cifrado con restauración probada. Bedrock, si se adopta, recibe solo agregados sin identificadores ni datos de salud. El presupuesto debe verificar créditos elegibles y alertas; no se presupone un corte automático de gasto.

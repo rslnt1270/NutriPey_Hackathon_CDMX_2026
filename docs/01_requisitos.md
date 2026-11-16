@@ -28,7 +28,7 @@ La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre pe
 
 | Actor | Descripción |
 | :--- | :--- |
-| **Tutor** | Titular de la cuenta bancaria desde la que se recarga. Configura reglas y recibe avisos por Telegram o WhatsApp. Un alumno puede tener varios tutores. |
+| **Tutor** | Titular de la cuenta bancaria desde la que se recarga. Configura reglas y consulta el historial en la PWA de padres; no recibe mensajes externos. Un alumno puede tener varios tutores. |
 | **Estudiante** | Porta una credencial: pulsera o tarjeta NFC, o carnet con QR. No necesita celular. |
 | **Cajero** | Personal de la cooperativa. Usa la PWA de punto de venta con sesión propia. |
 | **Administrador de cooperativa** | Gestiona catálogo, cajeros y conciliación. Titular de la cuenta bancaria receptora. |
@@ -80,19 +80,21 @@ La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre pe
 - **RF-17 (Reglas del tutor):** por alumno, el tutor define alérgenos prohibidos, categorías bloqueadas y tope diario.
 - **RF-18 (Reporte de cumplimiento):** la escuela descarga un reporte mensual agregado: productos vendidos por categoría, proporción de pagos digitales y número de bloqueos por alérgeno. Sin datos por alumno.
 
-### 3.4 Notificaciones por canal autorizado
+### 3.4 Historial para el tutor (PWA de padres)
 
-- **RF-19 (Avisos inmediatos):** recarga acreditada, compra bloqueada por regla del tutor y saldo por debajo de un umbral.
-- **RF-20 (Resumen diario):** un mensaje al final de la jornada con las compras del día y el saldo. El tutor puede cambiarlo a ticket por compra o desactivarlo.
-- **RF-21 (Envío desacoplado):** los mensajes salen del outbox persistente mediante n8n, con reintentos acotados y estado por evento/destinatario. Una falla del proveedor no afecta cobros ni webhooks; recibir el evento no significa entregar el mensaje.
+Decisión del 16 noviembre: NutriPey no envía mensajes por WhatsApp, Telegram ni correo. El tutor revisa en la PWA lo que compró su hijo, por ejemplo al final del día o de la semana.
+
+- **RF-19 (Historial):** por cada alumno vinculado, la PWA muestra compras (productos, cantidades y total), recargas, anulaciones, reembolsos e intentos bloqueados (producto y tipo de regla, sin motivo médico), junto con el saldo actual obtenido por una lectura autorizada; cada consulta devuelve el rango completo (máximo 31 días y 500 movimientos) con su instante de consulta; los cambios posteriores aparecen al refrescar. Se lee con `historial` y `saldo` del [contrato del ledger](./contratos/ledger.md).
+- **RF-20 (Resumen en la app):** la PWA agrupa por día y por semana (total gastado, productos e intentos bloqueados) y resalta el saldo cuando queda por debajo del umbral que fija el tutor.
+- **RF-21 (Retirado el 16 nov):** envío desacoplado por outbox y n8n.
 
 ### 3.5 Consentimiento
 
 - **RF-22 (Alta con consentimiento):** el alta de un alumno exige la aceptación del aviso de privacidad por el tutor, con consentimiento expreso y separado para datos de alergias y, si aplica, para la foto.
 
-### 3.6 Mensajería e informes asistidos
+### 3.6 Informes asistidos
 
-- **RF-23 (Vinculación de mensajería):** verificar destinatario, consentimiento y relación tutor/alumno antes de habilitar Telegram o WhatsApp; permitir revocación. Un canal operativo es suficiente para la entrega.
+- **RF-23 (Retirado el 16 nov):** vinculación de mensajería.
 - **RF-24 (Resumen asistido, opcional):** Bedrock podrá redactar reportes agregados ya calculados; nunca decidir saldo, cobro, alergias o cumplimiento. Con fallo se conserva el reporte numérico. Requiere decisión de adopción y evaluación independiente.
 
 ## 4. Requerimientos No Funcionales (RNF)
@@ -107,7 +109,7 @@ La entrega principal es el **12 de diciembre**. El prototipo del 15 noviembre pe
 
 - **RNF-08 (Reproducibilidad):** imágenes Docker versionadas, arranque documentado, healthcheck, migraciones explícitas y PostgreSQL persistente sin puerto público.
 - **RNF-09 (Recuperación):** respaldos cifrados y restauración ensayada en entorno aislado; registrar RPO/RTO medidos y objetivos acordados antes del 7 diciembre.
-- **RNF-10 (Operación):** métricas de latencia, errores, conciliación y edad del outbox sin datos personales; un aviso fallido no bloquea caja.
+- **RNF-10 (Operación):** métricas de latencia, errores y conciliación, sin datos personales.
 - **RNF-11 (Costo y acceso):** verificar elegibilidad/vigencia de créditos, región, presupuesto y alertas; IAM mínimo y secretos fuera de imágenes/repositorio. Las alertas no cortan el gasto.
 - **RNF-12 (Escalabilidad):** medir p95 con carga y recursos documentados; Docker no implica alta disponibilidad. Adoptar servicios adicionales solo con prueba, costo y decisión registrados.
 
