@@ -247,10 +247,11 @@ function registrarReembolso(input: {
 
 ### `saldo`
 
-Es de solo lectura. Quien llama ya comprobó que el tutor o el operador puede ver a ese alumno; el ledger vuelve a comprobar `cooperativaId`.
+Es de solo lectura. La identidad procede de la sesión autenticada, nunca del cuerpo de la solicitud. El ledger autoriza otra vez dentro de la consulta: tutor con vínculo vigente con el alumno, u operador activo con permiso de lectura en la cooperativa. Se comprueba que alumno y cuenta pertenezcan a esa cooperativa; no basta conocer sus ids.
 
 ```ts
-function saldo(input: { cooperativaId: string; estudianteId: string }): Promise<{
+type ActorLectura = { tipo: "TUTOR"; tutorId: string } | { tipo: "OPERADOR"; operadorId: string };
+function saldo(input: { actor: ActorLectura; cooperativaId: string; estudianteId: string }): Promise<{
   saldoCentavos: Centavos;
   gastadoHoyCentavos: Centavos;      // compras menos reversos del día CDMX
   topeDiarioCentavos: Centavos | null;
@@ -273,13 +274,14 @@ type Movimiento =
 function historial(input: {
   tutorId: string;          // de la sesión de la PWA
   estudianteId: string;
+  cooperativaId: string;    // se verifica contra alumno/cuenta; no es autorización por sí sola
   desde: string;            // ISO 8601; rango máximo 31 días
   hasta: string;
   cursor?: string;          // opaco; páginas de 50
 }): Promise<{ movimientos: Movimiento[]; siguiente: string | null; saldoCentavos: Centavos }>;
 ```
 
-- El ledger comprueba dentro de la consulta que exista un vínculo `TUTOR_ESTUDIANTE` vigente. Si no existe, lanza `ErrorNoAutorizado`, aunque la ruta ya lo haya comprobado.
+- En cada página, el ledger comprueba en la misma lectura la sesión actual y el vínculo `TUTOR_ESTUDIANTE` vigente, junto con alumno/cuenta de la cooperativa solicitada. Aplica ese ámbito a compras, recargas, reversos, reembolsos, rechazos y saldo; nunca filtra solo después de paginar. Identidad de tutor solo desde sesión, sin admitir suplantación mediante parámetros. Vínculo ausente/revocado, alumno ajeno o cooperativa distinta dan ErrorNoAutorizado sin datos, aunque la ruta haya autorizado antes. No hay caché pública ni offline del historial/saldo: HTTP Cache-Control: private, no-store y exclusión de esas respuestas del service worker; limpiar estado al cerrar sesión/cambiar alumno.
 - El orden es `ocurridoEn` descendente, con `id` como desempate. El cursor codifica `(ocurridoEn, id)`.
 - Los productos se devuelven con su nombre comercial. Nunca se devuelven códigos de alérgeno, otros alumnos ni datos del operador. Un `INTENTO_BLOQUEADO` sale de `auditoria_rechazo` (§4); `CREDENCIAL_INVALIDA` no aparece porque no se sabe de quién es el token.
 - La PWA calcula "saldo bajo" comparando `saldoCentavos` contra el umbral que guarda el tutor. No hay un evento para eso.
@@ -297,7 +299,7 @@ function estadoLimiteCuenta(input: { operadorId: string; cooperativaId: string }
 }>;
 ```
 
-- Solo para operadores `ADMIN` de esa cooperativa. El panel resalta el 80 % y el 100 %; el bloqueo al 100 % lo aplica #26 al crear cobros CoDi. No se manda ningún mensaje.
+- Operador tomado de la sesión autenticada; el ledger comprueba en la consulta que siga activo y tenga rol `ADMIN` de esa cooperativa. ErrorNoAutorizado en caso contrario. El panel resalta el 80 % y el 100 %; el bloqueo al 100 % lo aplica #26 al crear cobros CoDi. No se manda ningún mensaje.
 
 ---
 
@@ -334,6 +336,8 @@ Prueba A6: P1 acredita; P2 adicional, P2 repetido y P3 nunca crean otro anticipo
 Prueba de lectura: `historial` con un tutor sin vínculo vigente da 403; un hermano no aparece en el historial del otro; la paginación con cursor no repite ni omite movimientos al insertar uno nuevo durante la lectura; un rango mayor a 31 días da 400; ningún campo de la respuesta contiene códigos de alérgeno. `estadoLimiteCuenta` con un operador no ADMIN da 403; el cambio de mes CDMX reinicia el acumulado.
 
 Prueba C2: cron antes/después del webhook, pago antes y exactamente en expira_en, y entrega demorada: una sola acreditación aunque el estado ya sea EXPIRADA. Pago después del plazo o fecha ausente/inválida: sin acreditación automática, incidencia de revisión. Probar unidades segundos frente a milisegundos. Fuente consultada: [OpenAPI de pey](https://docs.pey.mx/openapi.json), datePaid en GET /transaction/{id} y en la lista de la cuenta.
+
+Prueba P1: suplantar tutor por parámetro, cruzar cooperativas, consultar saldo de un hermano no vinculado y revocar el vínculo entre páginas: 403 sin movimientos ni saldo. ADMIN inactivo o de otra cooperativa: 403. Ningún historial queda en caché de otro usuario.
 
 ## Preguntas abiertas
 
