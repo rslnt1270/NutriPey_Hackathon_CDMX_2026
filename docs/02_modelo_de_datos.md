@@ -136,10 +136,11 @@ erDiagram
 
     CUENTA_LEDGER {
         uuid id PK
+        uuid escuela_id FK "Ámbito compartido de cooperativa y alumno"
         uuid cooperativa_id FK
         string tipo "BANCO | CAJA_EFECTIVO | ANTICIPO_ALUMNO | INGRESO_VENTAS"
         uuid estudiante_id FK "Solo para ANTICIPO_ALUMNO"
-        bigint saldo_centavos "Materializado, nunca negativo"
+        bigint saldo_centavos "Materializado; anticipo no negativo"
         timestamptz created_at
     }
 
@@ -295,3 +296,11 @@ CREATE INDEX idx_rechazo_estudiante        ON auditoria_rechazo (estudiante_id, 
 ```
 
 El cobro resuelve credencial, alumno, reglas y cuenta con cuatro lecturas por llave. No suma asientos.
+
+## 5. Implementación incremental de cuentas (#53)
+
+La migración `20261117_1440_cuentas_ledger.sql` crea solamente `CUENTA_LEDGER`, sobre la base referencial de #43. Sus FKs compuestas `(cooperativa_id, escuela_id)` y `(estudiante_id, escuela_id)` exigen la misma escuela. Solo ANTICIPO_ALUMNO admite y exige estudiante; existe un anticipo por alumno y una cuenta general por cooperativa/tipo, incluso si varias cooperativas comparten escuela.
+
+Toda cuenta nace con saldo cero. Los saldos usan bigint dentro de ±9,007,199,254,740,991 centavos y el anticipo no admite negativos; las cuentas generales pueden tener saldo negativo. Estos límites no sustituyen el tope por operación del contrato.
+
+Todavía no hay asientos, transacciones, reconstrucción ni protección frente a UPDATE directo del saldo: #44 debe añadirlos antes de consumir estas tablas para pagos. La concurrencia probada aquí es de altas de cuentas, no de cobros ni de idempotencia financiera. #44 y #6 permanecen abiertos.

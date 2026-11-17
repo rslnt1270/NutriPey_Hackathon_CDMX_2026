@@ -23,3 +23,17 @@ python3 scripts/con_dos_cpu.py node --test --test-concurrency=1 tests/migracion-
 La prueba crea y elimina solo un esquema aleatorio propio. Verifica migración real, unicidad, FKs, límites enteros, restricciones de cuenta activa, rollback y fallo intermedio sin borrar tablas existentes. Una tabla desechable dentro de ese esquema demuestra el patrón de FKs compuestas necesario para #44; no se instala como tabla del producto.
 
 #44 añadirá cuentas, transacciones, asientos, inmutabilidad, partida doble diferida y saldo materializado. #45 añadirá persistencia de idempotencia, recargas, eventos y auditoría sin mensajería. Por ello esta parte no satisface aún los criterios de concurrencia 20/5, doble partida, reversos e idempotencia de #6: se exigirán contra PostgreSQL real en el núcleo contable. No cerrar #6 con este PR.
+
+## Cuentas contables (#53, parte de #44)
+
+Después de la base referencial, aplicar una sola vez `db/migrations/20261117_1440_cuentas_ledger.sql` con el mismo procedimiento manual. Ambas migraciones incluyen BEGIN/COMMIT. No editar archivos fusionados ni ejecutar pruebas en producción.
+
+La nueva tabla exige ámbito escolar común, anticipo único por alumno y cuentas generales únicas por cooperativa/tipo. El trigger de alta rechaza un saldo inicial distinto de cero; los CHECK limitan el rango entero seguro y evitan anticipos negativos. No bloquea UPDATE directo de saldo: la actualización contable y su protección pertenecen a las siguientes partes de #44, junto con transacciones, asientos, reversos y partida doble. No habilita APIs ni pagos.
+
+Con PostgreSQL desechable y TEST_DATABASE_URL de la guía, ejecutar:
+
+```bash
+python3 scripts/con_dos_cpu.py node --test tests/cuentas-ledger.test.mjs
+```
+
+Arrancar también PostgreSQL bajo `scripts/con_dos_cpu.py` para que servidor y pruebas compartan las mismas dos CPU. Los tests crean un esquema aleatorio, aplican las migraciones ordenadas y lo eliminan al finalizar. Comprueban tipos, FKs, unicidad entre cooperativas, límites de saldo y rollback; veinte conexiones compiten por el mismo anticipo y por la misma cuenta BANCO, obteniendo una alta y diecinueve conflictos de unicidad en cada caso. Esto no prueba cobros concurrentes 20/5 ni idempotencia de movimientos; siguen pendientes en #44/#45.
