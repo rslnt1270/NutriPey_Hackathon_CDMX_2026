@@ -91,6 +91,39 @@ caso("anulación fuera de plazo se rechaza", () => {
   L.cobrar(st, { pulsera: "tag-91C2", items: [{ id: "agua", qty: 1 }], llave: "k1", ahora: T });
   igual(L.anular(st, { cobro: "k1", ahora: T + 121000 }).ok, false);
 });
+// M1 (#34): cantidades y montos inválidos por llamada directa no crean asientos.
+caso("M1: cobro rechaza cantidades no enteras, cero o negativas sin asentar", () => {
+  const st = L.crearEstado();
+  L.acreditarRecarga(st, { referencia: "R1", alumnoId: "a2", centavos: 5000, ahora: T });
+  const antes = st.asientos.length;
+  [-1, 0, 1.5, NaN, Infinity, "2", undefined].forEach((qty, i) => {
+    const r = L.cobrar(st, { pulsera: "tag-91C2", items: [{ id: "agua", qty }], llave: "q" + i, ahora: T });
+    igual(r.ok, false, "qty " + String(qty)); igual(r.motivo, "Cantidad inválida", "qty " + String(qty));
+  });
+  igual(st.asientos.length, antes, "sin asientos nuevos"); igual(L.saldo(st, "a2"), 5000); cuadra(st);
+});
+caso("M1: una cantidad negativa no compensa otra positiva", () => {
+  const st = L.crearEstado();
+  L.acreditarRecarga(st, { referencia: "R1", alumnoId: "a2", centavos: 5000, ahora: T });
+  const r = L.cobrar(st, { pulsera: "tag-91C2", items: [{ id: "torta", qty: 2 }, { id: "agua", qty: -2 }], llave: "k1", ahora: T });
+  igual(r.ok, false); igual(L.saldo(st, "a2"), 5000); igual(L.gastadoHoy(st, "a2", T), 0);
+});
+caso("M1: cobro rechaza totales fuera del rango seguro", () => {
+  const st = L.crearEstado();
+  L.acreditarRecarga(st, { referencia: "R1", alumnoId: "a2", centavos: 5000, ahora: T });
+  const antes = st.asientos.length;
+  const r = L.cobrar(st, { pulsera: "tag-91C2", items: [{ id: "agua", qty: Number.MAX_SAFE_INTEGER }], llave: "k1", ahora: T });
+  igual(r.ok, false); igual(r.motivo, "Monto fuera de rango"); igual(st.asientos.length, antes);
+});
+caso("M1: recarga rechaza montos fuera del rango seguro", () => {
+  const st = L.crearEstado();
+  [2 ** 53, -100, 0].forEach((centavos) => {
+    let lanzo = false;
+    try { L.acreditarRecarga(st, { referencia: "R" + centavos, alumnoId: "a2", centavos, ahora: T }); } catch { lanzo = true; }
+    igual(lanzo, true, "centavos " + centavos);
+  });
+  igual(st.asientos.length, 0);
+});
 caso("asientos inmutables", () => {
   const st = L.crearEstado();
   L.acreditarRecarga(st, { referencia: "R1", alumnoId: "a2", centavos: 5000, ahora: T });
