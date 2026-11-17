@@ -54,6 +54,7 @@ erDiagram
         string pey_bank_account_id UK "ULID de POST /bank-account"
         string codi_status "PENDING | PROCESSING | ACTIVE | ERROR"
         bigint limite_abonos_mes_centavos "Nulo si la cuenta no tiene tope"
+        bigint limite_efectivo_mes_centavos "Nulo si no hay tope; RN-02, #26"
         boolean activa
     }
 
