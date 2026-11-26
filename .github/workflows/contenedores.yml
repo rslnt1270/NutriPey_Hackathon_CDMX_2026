@@ -20,5 +20,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Contraseña desechable del rol app
+        run: echo "APP_DATABASE_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
       - name: Construcción y persistencia (máximo dos CPU)
         run: python3 scripts/con_dos_cpu.py python3 scripts/verificar_docker.py
