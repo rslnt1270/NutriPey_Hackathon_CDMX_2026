@@ -71,3 +71,13 @@ y movimientos bajo el rol real de app: concurrencia 20/5, llave repetida, revers
 único, sobregiro, partida doble y reconstrucción. La combinación con #57 es una
 prueba local, no autorización para aplicar su migración sin fusionar en producción.
 Referencia: [permisos PostgreSQL](https://www.postgresql.org/docs/18/ddl-priv.html).
+
+## Evidencia de integración — 26 noviembre 2026
+
+Aplicado #58 en la EC2 de integración con autorización del usuario, sin fusionar
+el PR #59 ni aplicar #57. Se conserva app `d8ef800` y las dos migraciones de main.
+Respaldo y restauración verificados en base temporal; copia privada en
+`/opt/nutripey/respaldo-58-20261126T073101Z`. Las cuatro tablas pertenecen a
+`nutripey_migracion`; conexión TCP autenticada como `nutripey_app` desde la red
+privada y ataques de privilegios rechazados. App/base sanas y health HTTP 200.
+DNS/HTTPS pendiente de reconectar Cloudflare; no se probaron pagos ni webhook real.

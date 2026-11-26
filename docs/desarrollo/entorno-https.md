@@ -1,6 +1,7 @@
 # Preparación de HTTPS de integración — #30
 
-Estado: artefactos para revisión, **sin entorno desplegado**. #30 permanece abierto.
+Estado al 26 nov 2026: integración desplegada en AWS, app/base sanas y roles
+separados (#58). DNS/HTTPS aún pendiente; #30 permanece abierto.
 Rutas dedicadas: `infrastructure/entorno-inicial/` y este documento. Reutiliza la
 imagen del Dockerfile fusionado en #19 sin modificar el Compose de desarrollo.
 No altera la demo de Pages ni `nutripey.y4ga.app`.
