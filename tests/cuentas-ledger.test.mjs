@@ -58,6 +58,8 @@ test('cuentas: cero inicial, bigint seguro y sobregiro solo en anticipo', async 
   const anticipo = (await client.query(insert, [escuela, coop, 'ANTICIPO_ALUMNO', alumno])).rows[0].id;
   const banco = (await client.query(insert, [escuela, coop, 'BANCO', null])).rows[0].id;
   await assert.rejects(client.query("INSERT INTO cuenta_ledger(escuela_id,cooperativa_id,tipo,saldo_centavos) VALUES ($1,$2,'CAJA_EFECTIVO',1)", [escuela, coop]), { code: '23514' });
+  // Límites de columna; desde #44 el saldo de producto solo cambia mediante asientos.
+  await client.query('ALTER TABLE cuenta_ledger DISABLE TRIGGER cuenta_proteger');
   const update = 'UPDATE cuenta_ledger SET saldo_centavos=$1 WHERE id=$2';
   for (const value of ['9007199254740992', '-9007199254740992']) {
     await assert.rejects(client.query(update, [value, banco]), { code: '23514' });
@@ -74,6 +76,7 @@ test('cuentas: cero inicial, bigint seguro y sobregiro solo en anticipo', async 
 
 test('cuentas: rollback no conserva altas ni cambios de saldo', async () => isolated(async ({ client, escuela, coop }) => {
   const id = (await client.query(insert, [escuela, coop, 'BANCO', null])).rows[0].id;
+  await client.query('ALTER TABLE cuenta_ledger DISABLE TRIGGER cuenta_proteger');
   await client.query('BEGIN');
   await client.query('UPDATE cuenta_ledger SET saldo_centavos=9 WHERE id=$1', [id]);
   await client.query(insert, [escuela, coop, 'CAJA_EFECTIVO', null]);
