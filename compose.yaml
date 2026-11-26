@@ -8,7 +8,7 @@ services:
     ports:
       - "127.0.0.1:${APP_PORT:-3000}:3000"
     environment:
-      DATABASE_URL: postgresql://nutripey:${POSTGRES_PASSWORD:?Use una clave hexadecimal local}@db:5432/nutripey
+      DATABASE_URL: postgresql://nutripey_app:${APP_DATABASE_PASSWORD:?Use una clave hexadecimal exclusiva para app}@db:5432/nutripey
     depends_on:
       db:
         condition: service_healthy

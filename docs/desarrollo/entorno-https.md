@@ -1,6 +1,7 @@
 # Preparación de HTTPS de integración — #30
 
-Estado: artefactos para revisión, **sin entorno desplegado**. #30 permanece abierto.
+Estado al 26 nov 2026: integración desplegada en AWS, app/base sanas y roles
+separados (#58). DNS/HTTPS aún pendiente; #30 permanece abierto.
 Rutas dedicadas: `infrastructure/entorno-inicial/` y este documento. Reutiliza la
 imagen del Dockerfile fusionado en #19 sin modificar el Compose de desarrollo.
 No altera la demo de Pages ni `nutripey.y4ga.app`.
@@ -61,6 +62,7 @@ compose=(docker compose --project-name nutripey-integration \
 "${compose[@]}" exec -T db psql -U nutripey -d nutripey -c 'SELECT 1'
 # Aplicar migraciones revisadas del release con la herramienta de Pagos.
 # DETENER aquí si todavía no existe esa herramienta o faltan migraciones.
+# Aplicar roles-bd.md y asignar APP_DATABASE_PASSWORD antes de arrancar app.
 "${compose[@]}" up -d --no-build
 "${compose[@]}" ps
 ```
@@ -99,6 +101,9 @@ $0.01 según la guía `.claude/skills/deploy-check/SKILL.md`; no copiar su domin
 histórico de demo. No enviar dinero ni registrar webhook desde estos artefactos.
 Las demás rutas devuelven 404: recargas se prueban por el mecanismo autorizado de
 Pagos; exponer UI/API adicionales requiere revisar explícitamente el proxy.
+
+La app usa `nutripey_app`; seguir [roles PostgreSQL](roles-bd.md) para la
+transición del propietario y las credenciales. No conectar Next.js como `nutripey`.
 
 ## Parada, actualización y recuperación
 

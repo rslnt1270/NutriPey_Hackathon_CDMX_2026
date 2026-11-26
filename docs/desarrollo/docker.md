@@ -9,10 +9,15 @@ Desde la raíz del repo:
 ```bash
 export POSTGRES_PASSWORD=$(openssl rand -hex 24)
 export BUILD_CPUSET=$(python3 -c 'import os; print(",".join(map(str, sorted(os.sched_getaffinity(0))[:2])))')
+export APP_DATABASE_PASSWORD=$(openssl rand -hex 24)
+docker compose up -d db
+# Aplicar migraciones y roles antes de arrancar app (ver roles-bd.md).
 docker compose up -d --build
 docker compose ps
 curl --fail http://127.0.0.1:3000/api/health
 ```
+
+Seguir [roles PostgreSQL](roles-bd.md) para crear los roles y asignar sus contraseñas.
 
 Guardar la contraseña localmente fuera del repo para reutilizar el volumen. Usar hexadecimal evita caracteres que necesiten escape en DATABASE_URL. Compose exige una contraseña; no proporciona una por defecto. Cambiar la variable no cambia la contraseña de una base ya inicializada. No imprimir `docker compose config` con secretos al compartir evidencia.
 

@@ -26,7 +26,7 @@ services:
       - ${APP_ENV_FILE:?Ruta absoluta a archivo secreto fuera del repo}
     environment:
       APP_URL: https://${INTEGRATION_DOMAIN:?Dominio exclusivo de integración}
-      DATABASE_URL: postgresql://nutripey:${POSTGRES_PASSWORD:?Contraseña hexadecimal}@db:5432/nutripey
+      DATABASE_URL: postgresql://nutripey_app:${APP_DATABASE_PASSWORD:?Contraseña hexadecimal exclusiva para app}@db:5432/nutripey
     depends_on:
       db:
         condition: service_healthy
