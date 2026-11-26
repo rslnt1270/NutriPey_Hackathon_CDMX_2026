@@ -54,8 +54,7 @@ issue tramite "Registrar la CLABE receptora en pey" \
   "Tarda hasta 5 días hábiles. Mientras se activa, usar la cuenta de prueba de pey con \$0.01. $REF"
 issue tramite "Crear API key y webhook en el portal de pey" \
   "Guardar el secreto del webhook: se muestra una sola vez. Una llave para desarrollo y otra para la demo. $REF"
-issue tramite "Canal de WhatsApp: verificación en Meta o cuenta de Twilio" \
-  "Decisión D2. Las plantillas de Meta tardan días en aprobarse. $REF"
+# Retirado: canal de mensajería (D2 reemplazada el 16 nov, docs/05 §9).
 issue tramite "Comprar tags NFC y conseguir un Android con NFC" \
   "NTAG213 para la demo y dos o tres NTAG 424 DNA. $REF"
 issue tramite "Contactar una cooperativa escolar para el piloto" \
@@ -87,7 +86,7 @@ issue carril:pagos "Conciliador corto y diario" "RF-06. $P"
 issue carril:pagos "cobrar y anular reales" \
   "RF-11 a RF-13. Con prueba de concurrencia: 20 cobros simultáneos sobre saldo para 5. $P"
 issue carril:pagos "Recarga en efectivo" "RF-08. $P"
-issue carril:pagos "Cola de notificaciones y envío por WhatsApp" "RF-19 a RF-21. $P"
+# Retirado: cola de notificaciones externas (fuera del MVP, docs/05 §9).
 issue carril:pagos "Límite mensual de la cuenta receptora" "RN-02. $P"
 
 # --- Carril Campus ----------------------------------------------------------
