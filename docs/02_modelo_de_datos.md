@@ -259,17 +259,16 @@ BEGIN;
 INSERT INTO transaccion (id, idempotency_key, tipo, cooperativa_id, estudiante_id,
                          operador_id, credencial_id, monto_centavos)
 VALUES ($1, $2, 'COMPRA', $3, $4, $5, $6, $7)
-ON CONFLICT (idempotency_key) DO NOTHING;
+ON CONFLICT (cooperativa_id, tipo, idempotency_key) DO NOTHING;
 
--- 2. Bloqueo de la cuenta del alumno. Serializa los cobros concurrentes.
-SELECT saldo_centavos FROM cuenta_ledger WHERE id = $anticipo FOR UPDATE;
+-- 2. Bloqueo de las cuentas en orden ascendente de id. Serializa los cobros concurrentes.
+SELECT id, saldo_centavos FROM cuenta_ledger WHERE id IN ($anticipo, $ingreso) ORDER BY id FOR UPDATE;
 
 -- 3. Con el bloqueo tomado: reglas del tutor y tope diario
 --    (suma de compras menos reversos del dia en America/Mexico_City).
 
--- 4. Movimiento. El CHECK aborta la transaccion si no alcanza el saldo.
-UPDATE cuenta_ledger SET saldo_centavos = saldo_centavos - $7 WHERE id = $anticipo;
-UPDATE cuenta_ledger SET saldo_centavos = saldo_centavos + $7 WHERE id = $ingreso;
+-- 4. Movimiento. El trigger de asientos actualiza saldo_centavos (un UPDATE directo
+--    se rechaza) y el CHECK aborta la transaccion si no alcanza el saldo.
 INSERT INTO asiento_contable (transaccion_id, cuenta_ledger_id, tipo_asiento, monto_centavos)
 VALUES ($1, $anticipo, 'DEBITO', $7), ($1, $ingreso, 'CREDITO', $7);
 
